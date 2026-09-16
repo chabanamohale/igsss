@@ -94,8 +94,20 @@ def create_app(config_name=None):
         db.create_all()
         print("Database tables created.")
 
-    # -- ensure tables exist on startup -------------------------------------
+    @app.cli.command("seed")
+    def seed():
+        """Populate demo data."""
+        from seed import run_seed
+        run_seed()
+        print("Database seeded.")
+
+    # -- ensure tables and seed exist on startup ----------------------------
     with app.app_context():
         db.create_all()
+        try:
+            from seed import run_seed
+            run_seed()
+        except Exception as e:
+            print(f"Seeding skipped: {e}")
 
     return app
