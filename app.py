@@ -1,11 +1,3 @@
-"""
-Integrated Government Services System — application factory.
-
-Three-tier architecture as documented:
-  presentation  -> templates/ + static/        (HTML5, CSS3, JS, Bootstrap)
-  application   -> blueprints/ + utils/        (Flask business logic)
-  data          -> models.py + instance/*.db   (SQLite via SQLAlchemy)
-"""
 import os
 from datetime import datetime
 
@@ -102,16 +94,8 @@ def create_app(config_name=None):
         db.create_all()
         print("Database tables created.")
 
-    @app.cli.command("seed")
-    def seed_cmd():
-        """Populate demonstration data."""
-        from seed import run_seed
-        run_seed()
+    # -- ensure tables exist on startup -------------------------------------
+    with app.app_context():
+        db.create_all()
 
     return app
-
-
-app = create_app()
-
-if __name__ == "__main__":
-    app.run(debug=True)
