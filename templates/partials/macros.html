@@ -1,0 +1,70 @@
+{# Shared display components. #}
+
+{% macro status_badge(status, overdue=false) %}
+  {% set cls = {
+    'Submitted': 'badge-neutral', 'Under Review': 'badge-review',
+    'Awaiting Payment': 'badge-pending', 'Awaiting Documents': 'badge-pending',
+    'Approved': 'badge-approved', 'Collected': 'badge-approved',
+    'Rejected': 'badge-rejected' }.get(status, 'badge-neutral') %}
+  <span class="badge {{ cls }}">{{ status }}</span>
+  {% if overdue %}<span class="badge badge-overdue">Overdue</span>{% endif %}
+{% endmacro %}
+
+{% macro dept_tag(department) %}
+  {% if department %}
+    <span class="dept-tag" style="--stripe: {{ department.colour }}">{{ department.name }}</span>
+  {% endif %}
+{% endmacro %}
+
+{% macro stat(label, value, foot=None, attention=false) %}
+  <div class="stat {{ 'attention' if attention }}">
+    <div class="stat-label">{{ label }}</div>
+    <div class="stat-value">{{ value }}</div>
+    {% if foot %}<div class="stat-foot">{{ foot }}</div>{% endif %}
+  </div>
+{% endmacro %}
+
+{% macro empty(heading, detail, action_url=None, action_label=None) %}
+  <div class="empty">
+    <h3>{{ heading }}</h3>
+    <p>{{ detail }}</p>
+    {% if action_url %}<a class="btn btn-primary" href="{{ action_url }}">{{ action_label }}</a>{% endif %}
+  </div>
+{% endmacro %}
+
+{% macro bar(label, value, maximum, colour='var(--green-700)') %}
+  <div class="bar-row">
+    <span class="bar-label" title="{{ label }}">{{ label }}</span>
+    <span class="bar-track">
+      <span class="bar-fill" style="width: {{ (value / maximum * 100) if maximum else 0 }}%; background: {{ colour }}"></span>
+    </span>
+    <span class="bar-value">{{ value }}</span>
+  </div>
+{% endmacro %}
+
+{% macro citizen_line(citizen) %}
+  <a href="{{ url_for('employee.citizen_profile', citizen_id=citizen.id) }}">{{ citizen.full_name }}</a>
+  <div class="small muted">{{ citizen.national_id }}{% if citizen.district %} · {{ citizen.district }}{% endif %}</div>
+{% endmacro %}
+
+{% macro star_display(rating, count=None) %}
+  {% if rating %}
+    <span class="star-row readonly" aria-label="{{ rating }} out of 5 stars">
+      {% for i in range(1,6) %}<span class="{{ 'on' if i <= rating|round(0,'floor') }}">★</span>{% endfor %}
+    </span>
+    <span class="small muted">{{ rating }}{% if count %} · {{ count }} review{{ 's' if count != 1 }}{% endif %}</span>
+  {% else %}
+    <span class="small muted">No reviews yet</span>
+  {% endif %}
+{% endmacro %}
+
+{% macro fav_button(service, favourited) %}
+  <button type="button" class="fav-btn {{ 'active' if favourited }}"
+          data-fav-toggle="{{ url_for('api.toggle_favourite', service_id=service.id) }}"
+          aria-label="Toggle favourite" title="Save to favourites">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="{{ 'currentColor' if favourited else 'none' }}"
+         stroke="currentColor" stroke-width="1.8">
+      <path d="M12 21s-7.5-4.6-10-9.3C.3 8 2 4.5 5.5 4c2-.3 3.9.6 5 2.2C11.6 4.6 13.5 3.7 15.5 4 19 4.5 20.7 8 20 11.7 17.5 16.4 12 21 12 21Z"/>
+    </svg>
+  </button>
+{% endmacro %}

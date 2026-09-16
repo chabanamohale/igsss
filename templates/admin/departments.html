@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Departments{% endblock %}
+{% block crumb %}<strong>Departments</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div>
+  <h1>Departments</h1>
+  <p class="lead">Each department owns its own records and its own key colour, which
+     appears on every record it owns across the system.</p>
+</div></div>
+
+<div class="grid grid-sidebar">
+  <div class="panel">
+    <div class="panel-head"><h2>On the platform</h2></div>
+    <div class="table-wrap">
+    <table class="records">
+      <thead><tr><th>Department</th><th>Code</th><th>Ministry</th><th>Staff</th>
+        <th>Services</th><th>Contact</th></tr></thead>
+      <tbody>
+        {% for d in departments %}
+          <tr style="--stripe: {{ d.colour }}">
+            <td><strong>{{ d.name }}</strong>
+              <div class="small muted">{{ d.description|truncate(70) if d.description }}</div></td>
+            <td class="mono-ref">{{ d.code }}</td>
+            <td class="small">{{ d.ministry or '—' }}</td>
+            <td>{{ d.employees|length }}</td>
+            <td>{{ d.services|length }}</td>
+            <td class="small">{{ d.contact_phone or '—' }}
+              <div class="muted">{{ d.head_office or '' }}</div></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <form method="post" class="panel" style="height:fit-content">
+    <div class="panel-head"><h3>Add a department</h3></div>
+    <div class="panel-body">
+      <div class="field-row">
+        <div class="field">
+          <label for="code">Code</label>
+          <input type="text" id="code" name="code" maxlength="6" required placeholder="EDU">
+        </div>
+        <div class="field">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" required placeholder="Education">
+        </div>
+      </div>
+      <div class="field">
+        <label for="ministry">Ministry</label>
+        <input type="text" id="ministry" name="ministry">
+      </div>
+      <div class="field">
+        <label for="description">What it does</label>
+        <textarea id="description" name="description"></textarea>
+      </div>
+      <div class="field">
+        <label for="head_office">Head office</label>
+        <input type="text" id="head_office" name="head_office">
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="contact_phone">Phone</label>
+          <input type="tel" id="contact_phone" name="contact_phone"></div>
+        <div class="field"><label for="contact_email">Email</label>
+          <input type="email" id="contact_email" name="contact_email"></div>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Add department</button>
+      <p class="small muted mt-2 mb-0">New departments get a neutral key colour until
+         one is assigned in the code.</p>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status_badge, empty %}
+{% block title %}My applications{% endblock %}
+{% block crumb %}<strong>My applications</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div><h1>My applications</h1>
+    <p class="lead">Everything you have submitted, newest first.</p></div>
+  <div class="head-actions">
+    <a class="btn btn-primary" href="{{ url_for('citizen.apply_catalogue') }}">New application</a>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <a class="chip {{ 'active' if not status }}" href="{{ url_for('citizen.applications') }}">All</a>
+  {% for s in ['Submitted','Under Review','Awaiting Payment','Approved','Collected','Rejected'] %}
+    <a class="chip {{ 'active' if status == s }}"
+       href="{{ url_for('citizen.applications', status=s) }}">{{ s }}</a>
+  {% endfor %}
+</div>
+
+<div class="panel">
+  {% if applications %}
+    <div class="table-wrap">
+    <table class="records">
+      <thead><tr><th>Reference</th><th>Service</th><th>Submitted</th><th>Status</th>
+        <th>Balance</th><th></th></tr></thead>
+      <tbody>
+        {% for a in applications %}
+          <tr style="--stripe: {{ a.department.colour }}">
+            <td class="mono-ref">{{ a.reference }}</td>
+            <td>{{ a.service.name }}<div class="small muted">{{ a.department.name }}</div></td>
+            <td class="small">{{ a.submitted_at.strftime('%d %b %Y') }}</td>
+            <td>{{ status_badge(a.status, a.is_overdue) }}</td>
+            <td>{% if a.balance > 0 %}<strong style="color:#7A5D0F">{{ a.balance|money }}</strong>
+                {% else %}<span class="small muted">Settled</span>{% endif %}</td>
+            <td class="text-right">
+              <a class="btn btn-outline btn-sm" href="{{ url_for('citizen.application_detail', app_id=a.id) }}">Open</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <div class="panel-body">
+      {{ empty("Nothing here yet",
+               "When you apply for a service it will appear here with a reference you can quote.",
+               url_for('citizen.apply_catalogue'), "Browse services") }}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

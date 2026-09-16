@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status_badge %}
+{% block title %}{{ application.reference }}{% endblock %}
+{% block crumb %}<a href="{{ url_for('citizen.applications') }}">My applications</a> ·
+  <strong>{{ application.reference }}</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="striped" style="--stripe: {{ application.department.colour }}">
+    <h1>{{ application.service.name }}</h1>
+    <p class="lead"><span class="mono-ref">{{ application.reference }}</span> ·
+       {{ application.department.name }}</p>
+  </div>
+  <div class="head-actions">{{ status_badge(application.status, application.is_overdue) }}</div>
+</div>
+
+{% if application.status == 'Awaiting Payment' %}
+  <div class="alert alert-warning">
+    <strong>Waiting on payment of {{ application.balance|money }}.</strong>
+    Nothing moves until the fee clears. <a href="{{ url_for('citizen.payments') }}">Pay now</a>.
+  </div>
+{% elif application.status == 'Awaiting Documents' %}
+  <div class="alert alert-warning">
+    <strong>A document is missing.</strong> Read the officer's note below, then
+    upload what they asked for.
+  </div>
+{% elif application.status == 'Rejected' and application.decision_reason %}
+  <div class="alert alert-danger">
+    <strong>This application was refused.</strong> {{ application.decision_reason }}
+  </div>
+{% elif application.status == 'Approved' %}
+  <div class="alert alert-success">
+    <strong>Approved.</strong> Bring your national ID to
+    {{ application.department.head_office or application.department.name }} to collect.
+  </div>
+{% endif %}
+
+<div class="grid grid-sidebar">
+  <div class="stack">
+
+    <div class="panel">
+      <div class="panel-head"><h2>Case history</h2></div>
+      <div class="panel-body">
+        <ul class="timeline">
+          {% for h in application.history %}
+            <li class="{{ 'current' if loop.last else 'done' }}">
+              <span class="t-title">{{ h.to_status }}</span>
+              <div class="t-meta">{{ h.changed_at.strftime('%d %b %Y, %H:%M') }} ·
+                 {{ h.changed_by or 'System' }}</div>
+              {% if h.note %}<div class="small mt-1">{{ h.note }}</div>{% endif %}
+            </li>
+          {% else %}
+            <li class="current"><span class="t-title">Submitted</span>
+              <div class="t-meta">{{ application.submitted_at.strftime('%d %b %Y, %H:%M') }}</div></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Documents</h2>
+        <span class="head-actions small muted">{{ application.documents|length }} attached</span>
+      </div>
+      {% if application.documents %}
+        <table>
+          <tbody>
+            {% for d in application.documents %}
+              <tr>
+                <td><a href="{{ url_for('citizen.open_document', doc_id=d.id) }}">{{ d.original_name }}</a>
+                  <div class="small muted">{{ d.doc_type }} · {{ d.size_kb }} KB ·
+                    {{ d.uploaded_at.strftime('%d %b %Y') }}</div></td>
+                <td class="text-right">
+                  {% if d.verified %}<span class="badge badge-approved">Verified</span>
+                  {% else %}<span class="badge badge-neutral">Not yet checked</span>{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+      <div class="panel-body" style="border-top:1px solid var(--rule-soft)">
+        <form method="post" enctype="multipart/form-data"
+              action="{{ url_for('citizen.add_document', app_id=application.id) }}">
+          <div class="field-row">
+            <div class="field">
+              <label for="doc_type">Document name</label>
+              <input type="text" id="doc_type" name="doc_type" placeholder="Medical certificate">
+            </div>
+            <div class="field">
+              <label for="document">File</label>
+              <input type="file" id="document" name="document" required
+                     accept=".pdf,.png,.jpg,.jpeg,.docx">
+              <div class="hint">PDF, JPG, PNG or DOCX, up to 8 MB.</div>
+            </div>
+          </div>
+          <button class="btn btn-outline" type="submit">Upload document</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><h3>Details</h3></div>
+      <div class="panel-body">
+        <dl class="deflist">
+          <dt>Submitted</dt><dd>{{ application.submitted_at.strftime('%d %b %Y') }}</dd>
+          <dt>Expected by</dt><dd>{{ application.due_date.strftime('%d %b %Y') if application.due_date else '—' }}</dd>
+          <dt>Priority</dt><dd>{{ application.priority }}</dd>
+          <dt>Officer</dt><dd>{{ application.officer.full_name if application.officer else 'Not yet assigned' }}</dd>
+          <dt>Fee</dt><dd>{{ application.service.fee|money }}</dd>
+          <dt>Paid</dt><dd>{{ application.amount_paid|money }}</dd>
+        </dl>
+        <div class="track mt-2 {{ 'stop' if application.status == 'Rejected' }}">
+          <span style="width: {{ application.progress }}%"></span>
+        </div>
+        <p class="small muted mt-1 mb-0">{{ application.progress }}% through the process</p>
+      </div>
+    </div>
+
+    {% if application.purpose %}
+      <div class="panel">
+        <div class="panel-head"><h3>Your stated reason</h3></div>
+        <div class="panel-body"><p class="small mb-0">{{ application.purpose }}</p></div>
+      </div>
+    {% endif %}
+
+    {% if application.balance > 0 %}
+      <div class="panel" style="border-color: var(--straw)">
+        <div class="panel-head"><h3>Outstanding</h3></div>
+        <div class="panel-body">
+          <div class="stat-value" style="color:#7A5D0F">{{ application.balance|money }}</div>
+          <a class="btn btn-straw btn-sm btn-block mt-2" href="{{ url_for('citizen.payments') }}">Settle this fee</a>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if not application.is_closed %}
+      <form method="post" action="{{ url_for('citizen.cancel_application', app_id=application.id) }}"
+            data-confirm="Withdraw this application? Fees already paid are not refunded automatically.">
+        <button class="btn btn-outline btn-block" type="submit">Withdraw this application</button>
+      </form>
+    {% elif application.status in ('Approved', 'Collected') %}
+      <a class="btn btn-primary btn-block" href="{{ url_for('citizen.review_form', application_id=application.id) }}">
+        {% if application.service.reviews|selectattr('application_id', 'equalto', application.id)|list %}
+          Update your review
+        {% else %}
+          Leave a review
+        {% endif %}
+      </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

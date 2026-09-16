@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import dept_tag %}
+{% block title %}Queue board{% endblock %}
+{% block crumb %}<a href="{{ url_for('employee.queue') }}">Work queue</a> · <strong>Board</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ dept.name if dept else 'All departments' }} — queue board</h1>
+    <p class="lead">Drag a case into the next column to change its status.
+       The list view has more detail; this view is for a quick visual sweep.</p></div>
+  <div class="head-actions no-print">
+    <a class="btn btn-outline" href="{{ url_for('employee.queue') }}">List view</a>
+  </div>
+</div>
+
+<div class="kanban" data-kanban data-kanban-url="{{ url_for('api.queue_status') }}">
+  {% for status in column_order %}
+    <div class="kanban-col" data-status="{{ status }}">
+      <h4>{{ status }} <span class="muted">{{ columns[status]|length }}</span></h4>
+      <div class="kanban-list">
+        {% for a in columns[status] %}
+          <div class="kanban-card" data-app-id="{{ a.id }}" style="border-left-color: {{ a.department.colour }}">
+            <strong class="mono-ref">{{ a.reference }}</strong>
+            {% if a.priority == 'Urgent' %}<span class="badge badge-overdue" style="margin-left:.3rem">Urgent</span>{% endif %}
+            <div class="small mt-1">{{ a.citizen.full_name }}</div>
+            <div class="small muted">{{ a.service.name }}</div>
+            <a class="small" href="{{ url_for('employee.application_detail', app_id=a.id) }}">Open case →</a>
+          </div>
+        {% endfor %}
+        {% if not columns[status] %}
+          <p class="small muted mt-2 mb-0 kanban-empty-note">Nothing here.</p>
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<p class="small muted mt-3">Only the last 60 open cases are shown here for
+   speed. Rejected and collected applications do not appear on the board —
+   find them in the <a href="{{ url_for('employee.queue') }}">full list</a>.</p>
+{% endblock %}

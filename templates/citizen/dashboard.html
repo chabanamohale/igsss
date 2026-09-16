@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status_badge, stat, empty %}
+{% block title %}Dashboard{% endblock %}
+{% block crumb %}<strong>Dashboard</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Lumela, {{ me.first_name }}</h1>
+    <p class="lead">
+      {% if me.verified %}
+        Your identity is verified, so every connected department can read your profile.
+      {% else %}
+        Home Affairs is still checking your national ID. You can browse services now
+        and apply as soon as it clears.
+      {% endif %}
+    </p>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-primary" href="{{ url_for('citizen.apply_catalogue') }}">Apply for a service</a>
+  </div>
+</div>
+
+{% if not me.verified %}
+  <div class="alert alert-warning">
+    <strong>Awaiting verification.</strong> Until Home Affairs confirms national ID
+    {{ me.national_id }}, you cannot submit applications. This normally takes one
+    working day.
+  </div>
+{% endif %}
+
+<div class="grid grid-4 mb-3">
+  {{ stat("Applications", counts.total, "since you registered") }}
+  {{ stat("In progress", counts.open, "with a department now") }}
+  {{ stat("Needs you", counts.action, "payment or documents", attention=counts.action > 0) }}
+  {{ stat("Completed", counts.approved, "approved or collected") }}
+</div>
+
+<div class="grid grid-sidebar">
+  <div class="stack">
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Recent applications</h2>
+        <span class="head-actions"><a class="small" href="{{ url_for('citizen.applications') }}">See all</a></span>
+      </div>
+      {% if recent %}
+        <div class="table-wrap">
+        <table class="records">
+          <thead><tr><th>Reference</th><th>Service</th><th>Status</th><th>Progress</th><th></th></tr></thead>
+          <tbody>
+            {% for a in recent %}
+              <tr style="--stripe: {{ a.department.colour }}">
+                <td class="mono-ref">{{ a.reference }}</td>
+                <td>{{ a.service.name }}<div class="small muted">{{ a.department.name }}</div></td>
+                <td>{{ status_badge(a.status, a.is_overdue) }}</td>
+                <td style="min-width:110px">
+                  <div class="track {{ 'stop' if a.status == 'Rejected' }}">
+                    <span style="width: {{ a.progress }}%"></span></div>
+                </td>
+                <td class="text-right">
+                  <a class="btn btn-outline btn-sm" href="{{ url_for('citizen.application_detail', app_id=a.id) }}">Open</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        </div>
+      {% else %}
+        <div class="panel-body">
+          {{ empty("You have not applied for anything yet",
+                   "Browse the catalogue to see what each department offers and what it costs.",
+                   url_for('citizen.apply_catalogue'), "Browse services") }}
+        </div>
+      {% endif %}
+    </div>
+
+    {% if reminders %}
+      <div class="panel">
+        <div class="panel-head"><h2>Expiring soon</h2></div>
+        <div class="panel-body">
+          <table>
+            <tbody>
+              {% for kind, number, expiry in reminders %}
+                <tr>
+                  <td><strong>{{ kind }}</strong><div class="small muted">{{ number }}</div></td>
+                  <td class="text-right">Expires {{ expiry.strftime('%d %b %Y') }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <p class="small muted mt-2 mb-0">Renew before the expiry date to avoid
+             applying as a new registration.</p>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><h3>Your profile</h3></div>
+      <div class="panel-body">
+        <dl class="deflist">
+          <dt>Name</dt><dd>{{ me.full_name }}</dd>
+          <dt>National ID</dt><dd class="mono-ref">{{ me.national_id }}</dd>
+          <dt>District</dt><dd>{{ me.district or 'Not set' }}</dd>
+          <dt>Status</dt><dd>{% if me.verified %}<span class="badge badge-approved">Verified</span>
+            {% else %}<span class="badge badge-pending">Awaiting check</span>{% endif %}</dd>
+        </dl>
+        <a class="btn btn-outline btn-sm mt-2" href="{{ url_for('citizen.profile') }}">Update contact details</a>
+      </div>
+    </div>
+
+    {% if outstanding > 0 %}
+      <div class="panel" style="border-color: var(--straw)">
+        <div class="panel-head"><h3>Fees to settle</h3></div>
+        <div class="panel-body">
+          <div class="stat-value" style="color:#7A5D0F">{{ outstanding|money }}</div>
+          <p class="small muted">Applications do not start processing until the fee clears.</p>
+          <a class="btn btn-straw btn-sm btn-block" href="{{ url_for('citizen.payments') }}">Pay now</a>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Notifications</h3>
+        <span class="head-actions"><a class="small" href="{{ url_for('citizen.notifications') }}">All</a></span>
+      </div>
+      <div class="panel-body">
+        {% if unread %}
+          {% for n in unread %}
+            <div class="striped mb-2" style="--stripe: var(--green-700)">
+              <div class="small" style="font-weight:600">{{ n.title }}</div>
+              <div class="small muted">{{ n.created_at|ago }}</div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="small muted mb-0">Nothing new. You will be told here when an
+             application changes.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty %}
+{% block title %}Accounts and roles{% endblock %}
+{% block crumb %}<strong>Accounts and roles</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div><h1>Accounts and roles</h1>
+    <p class="lead">{{ users|length }} account{{ '' if users|length == 1 else 's' }} shown.</p></div>
+  <div class="head-actions"><a class="btn btn-primary" href="{{ url_for('admin.new_user') }}">Create an account</a></div>
+</div>
+
+<form method="get" class="filter-bar">
+  <input type="search" name="q" value="{{ term }}" placeholder="Username or email">
+  <select name="role">
+    <option value="">Any role</option>
+    <option value="citizen" {{ 'selected' if role == 'citizen' }}>Citizens</option>
+    <option value="employee" {{ 'selected' if role == 'employee' }}>Government staff</option>
+    <option value="admin" {{ 'selected' if role == 'admin' }}>Administrators</option>
+  </select>
+  <button class="btn btn-primary" type="submit">Filter</button>
+  <a class="btn btn-outline" href="{{ url_for('admin.users') }}">Clear</a>
+</form>
+
+<div class="panel">
+  {% if users %}
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Account</th><th>Name</th><th>Role</th><th>Department</th>
+        <th>Last sign-in</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for u in users %}
+          <tr>
+            <td><strong>{{ u.username }}</strong>
+              <div class="small muted">{{ u.email }}</div></td>
+            <td class="small">{{ u.display_name }}</td>
+            <td>
+              <form method="post" action="{{ url_for('admin.change_role', user_id=u.id) }}">
+                <select name="role" style="width:auto;font-size:.8rem;padding:.2rem .4rem"
+                        onchange="this.form.submit()">
+                  <option value="citizen" {{ 'selected' if u.role == 'citizen' }}>Citizen</option>
+                  <option value="employee" {{ 'selected' if u.role == 'employee' }}>Staff</option>
+                  <option value="admin" {{ 'selected' if u.role == 'admin' }}>Administrator</option>
+                </select>
+              </form>
+            </td>
+            <td class="small">
+              {% if u.employee and u.employee.department %}
+                <span class="dept-tag" style="--stripe: {{ u.employee.department.colour }}">{{ u.employee.department.name }}</span>
+              {% else %}—{% endif %}</td>
+            <td class="small">{{ u.last_login.strftime('%d %b %Y') if u.last_login else 'Never' }}</td>
+            <td>{% if u.active %}<span class="badge badge-approved">Active</span>
+                {% else %}<span class="badge badge-rejected">Suspended</span>{% endif %}</td>
+            <td class="text-right nowrap">
+              <form method="post" action="{{ url_for('admin.reset_password', user_id=u.id) }}"
+                    style="display:inline" data-confirm="Reset the password for {{ u.username }}?">
+                <button class="btn btn-outline btn-sm" type="submit">Reset password</button></form>
+              <form method="post" action="{{ url_for('admin.toggle_user', user_id=u.id) }}"
+                    style="display:inline"
+                    data-confirm="{{ 'Suspend' if u.active else 'Reinstate' }} {{ u.username }}?">
+                <button class="btn btn-outline btn-sm" type="submit">{{ 'Suspend' if u.active else 'Reinstate' }}</button></form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <div class="panel-body">{{ empty("No accounts match those filters", "Clear the filters to see everyone.") }}</div>
+  {% endif %}
+</div>
+{% endblock %}

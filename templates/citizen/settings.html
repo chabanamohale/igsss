@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block crumb %}<strong>Settings</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div>
+  <h1>Settings</h1>
+  <p class="lead">Control how the system reaches you and how it looks on this device.</p>
+</div></div>
+
+<div class="grid grid-sidebar">
+  <form method="post" class="panel">
+    <div class="panel-head"><h2>Notifications</h2></div>
+    <div class="panel-body">
+      <div class="switch-row">
+        <div><strong>Email updates</strong>
+          <div class="small muted">Status changes and receipts sent to {{ current_user.email }}.</div></div>
+        <button type="button" class="switch {{ 'on' if current_user.notify_email }}" data-for="notify_email"></button>
+        <input type="hidden" id="notify_email" name="notify_email" value="{{ '1' if current_user.notify_email else '0' }}">
+      </div>
+      <div class="switch-row">
+        <div><strong>SMS updates</strong>
+          <div class="small muted">Text messages for urgent status changes only.</div></div>
+        <button type="button" class="switch {{ 'on' if current_user.notify_sms }}" data-for="notify_sms"></button>
+        <input type="hidden" id="notify_sms" name="notify_sms" value="{{ '1' if current_user.notify_sms else '0' }}">
+      </div>
+      <button class="btn btn-primary btn-block mt-3" type="submit">Save settings</button>
+    </div>
+  </form>
+
+  <div class="panel" style="height:fit-content">
+    <div class="panel-head"><h3>Appearance</h3></div>
+    <div class="panel-body">
+      <div class="switch-row">
+        <div><strong>Dark mode</strong>
+          <div class="small muted">Applies instantly on this device.</div></div>
+        <button type="button" class="icon-btn" data-theme-toggle aria-label="Toggle dark mode">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 3a9 9 0 1 0 9 9c0-.46-.03-.92-.08-1.36A5.5 5.5 0 0 1 12 3Z"/>
+          </svg>
+        </button>
+      </div>
+      <p class="small muted mb-0 mt-2">Your theme choice is saved on this device only, so
+         it may look different if you sign in elsewhere.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

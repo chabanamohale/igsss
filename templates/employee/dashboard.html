@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status_badge, stat, bar, empty %}
+{% block title %}Dashboard{% endblock %}
+{% block crumb %}<strong>{{ dept.name if dept else 'All departments' }}</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="striped" style="--stripe: {{ dept.colour if dept else 'var(--green-700)' }}">
+    <h1>{{ dept.name if dept else 'All departments' }}</h1>
+    <p class="lead">{{ current_user.employee.position if current_user.employee else 'Administrator' }}
+      {%- if current_user.employee and current_user.employee.office %} · {{ current_user.employee.office }}{% endif %}</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-outline" href="{{ url_for('employee.verify_identity') }}">Verify an identity</a>
+    <a class="btn btn-primary" href="{{ url_for('employee.queue') }}">Open the queue</a>
+  </div>
+</div>
+
+<div class="grid grid-4 mb-3">
+  {{ stat("In the queue", counts.queue, "not yet closed") }}
+  {{ stat("Assigned to me", counts.mine, "cases you own") }}
+  {{ stat("Unclaimed", counts.unassigned, "waiting for an officer", attention=counts.unassigned > 0) }}
+  {{ stat("Past due date", counts.overdue, "breaching the service standard", attention=counts.overdue > 0) }}
+</div>
+
+<div class="grid grid-sidebar">
+  <div class="stack">
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Latest arrivals</h2>
+        <span class="head-actions"><a class="small" href="{{ url_for('employee.queue') }}">Full queue</a></span>
+      </div>
+      {% if recent %}
+        <div class="table-wrap">
+        <table class="records">
+          <thead><tr><th>Reference</th><th>Applicant</th><th>Service</th>
+            <th>Status</th><th>Officer</th><th></th></tr></thead>
+          <tbody>
+            {% for a in recent %}
+              <tr style="--stripe: {{ a.department.colour }}">
+                <td class="mono-ref">{{ a.reference }}
+                  {% if a.priority == 'Urgent' %}<div class="small" style="color:var(--stop)">Urgent</div>{% endif %}</td>
+                <td>{{ a.citizen.full_name }}<div class="small muted">{{ a.citizen.national_id }}</div></td>
+                <td class="small">{{ a.service.name }}</td>
+                <td>{{ status_badge(a.status, a.is_overdue) }}</td>
+                <td class="small">{{ a.officer.full_name if a.officer else '—' }}</td>
+                <td class="text-right">
+                  <a class="btn btn-outline btn-sm" href="{{ url_for('employee.application_detail', app_id=a.id) }}">Open</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        </div>
+      {% else %}
+        <div class="panel-body">{{ empty("The queue is clear", "No applications are waiting on this department right now.") }}</div>
+      {% endif %}
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Applications received, last 14 days</h2></div>
+      <div class="panel-body">
+        {% set peak = trend|map(attribute='count')|max or 1 %}
+        <div class="spark" role="img" aria-label="Daily intake for the last fortnight">
+          {% for d in trend %}
+            <span class="{{ 'hot' if d.count == peak and peak > 0 }}"
+                  style="height: {{ (d.count / peak * 100) if peak else 0 }}%"
+                  title="{{ d.label }}: {{ d.count }}"></span>
+          {% endfor %}
+        </div>
+        <div class="row-between small muted mt-1">
+          <span>{{ trend[0].label }}</span><span>{{ trend[-1].label }}</span>
+        </div>
+        <p class="small muted mt-2 mb-0">{{ counts.today }} arrived today.
+           Busiest day in this window: {{ peak }}.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><h3>Where the work sits</h3></div>
+      <div class="panel-body">
+        {% set total = status_mix.values()|sum or 1 %}
+        <div class="bars">
+          {% for status, count in status_mix.most_common() %}
+            {{ bar(status, count, total) }}
+          {% endfor %}
+        </div>
+        {% if not status_mix %}<p class="small muted mb-0">Nothing to chart yet.</p>{% endif %}
+      </div>
+    </div>
+
+    {% if pending_access %}
+      <div class="panel" style="border-color: var(--straw)">
+        <div class="panel-head"><h3>Data requests to decide</h3></div>
+        <div class="panel-body">
+          <p class="small">{{ pending_access|length }} department{{ '' if pending_access|length == 1 else 's' }}
+             asked to read records you own.</p>
+          <a class="btn btn-straw btn-sm btn-block" href="{{ url_for('employee.access_requests') }}">Review requests</a>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="panel">
+      <div class="panel-head"><h3>Quick actions</h3></div>
+      <div class="panel-body stack">
+        <a class="btn btn-outline btn-block" href="{{ url_for('employee.search') }}">Find a citizen</a>
+        <a class="btn btn-outline btn-block" href="{{ url_for('employee.queue', scope='unassigned') }}">Claim unassigned work</a>
+        <a class="btn btn-outline btn-block" href="{{ url_for('employee.reports') }}">Generate a report</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

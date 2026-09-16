@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty %}
+{% block title %}Data sharing{% endblock %}
+{% block crumb %}<strong>Data sharing</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div>
+  <h1>Data sharing</h1>
+  <p class="lead">When a case needs records your department is not cleared for, ask the
+     department that owns them. Both the request and the decision are logged.</p>
+</div></div>
+
+<div class="grid grid-2">
+  <div class="panel">
+    <div class="panel-head"><h2>Requests to you</h2></div>
+    {% if incoming %}
+      <table>
+        <tbody>
+          {% for r in incoming %}
+            <tr style="--stripe: {{ r.requesting_department.colour }}" class="records">
+              <td class="striped" style="--stripe: {{ r.requesting_department.colour }}">
+                <strong class="mono-ref">{{ r.reference }}</strong>
+                <div class="small">{{ r.requesting_department.name }} wants records on
+                  <strong>{{ r.citizen.full_name }}</strong></div>
+                <div class="small muted">{{ r.reason }}</div>
+                <div class="small muted">{{ r.requested_by }} · {{ r.created_at|ago }}</div>
+              </td>
+              <td class="text-right nowrap">
+                {% if r.status == 'Pending' %}
+                  <form method="post" action="{{ url_for('employee.decide_access', req_id=r.id, decision='grant') }}" style="display:inline">
+                    <button class="btn btn-primary btn-sm" type="submit">Grant</button></form>
+                  <form method="post" action="{{ url_for('employee.decide_access', req_id=r.id, decision='deny') }}" style="display:inline">
+                    <button class="btn btn-outline btn-sm" type="submit">Deny</button></form>
+                {% else %}
+                  <span class="badge {{ 'badge-approved' if r.status == 'Granted' else 'badge-rejected' }}">{{ r.status }}</span>
+                  <div class="small muted">{{ r.decided_by }}</div>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="panel-body">{{ empty("Nothing to decide", "No other department has asked to read records you own.") }}</div>
+    {% endif %}
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><h2>Your requests</h2></div>
+      {% if outgoing %}
+        <table>
+          <tbody>
+            {% for r in outgoing %}
+              <tr>
+                <td><strong class="mono-ref">{{ r.reference }}</strong>
+                  <div class="small">{{ r.owning_department.name }} · {{ r.citizen.full_name }}</div>
+                  <div class="small muted">{{ r.created_at|ago }}</div></td>
+                <td class="text-right">
+                  <span class="badge {% if r.status == 'Granted' %}badge-approved
+                    {% elif r.status == 'Denied' %}badge-rejected{% else %}badge-pending{% endif %}">{{ r.status }}</span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="panel-body"><p class="small muted mb-0">You have not asked for anything yet.</p></div>
+      {% endif %}
+    </div>
+
+    <form method="post" class="panel">
+      <div class="panel-head"><h3>Raise a request</h3></div>
+      <div class="panel-body">
+        <div class="field">
+          <label for="citizen_id">Citizen ID number in this system</label>
+          <input type="number" id="citizen_id" name="citizen_id" required
+                 placeholder="Find it on the citizen's profile page">
+          <div class="hint">Open the citizen from Find a citizen; the number is in the address bar.</div>
+        </div>
+        <div class="field">
+          <label for="owning_department_id">Which department owns the records?</label>
+          <select id="owning_department_id" name="owning_department_id" required>
+            {% for d in all_departments %}
+              {% if not dept or d.id != dept.id %}<option value="{{ d.id }}">{{ d.name }}</option>{% endif %}
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="reason">Why do you need it?</label>
+          <textarea id="reason" name="reason" required
+            placeholder="Name the case and what the records will be used to decide."></textarea>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Send request</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

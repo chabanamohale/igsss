@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty %}
+{% block title %}Notifications{% endblock %}
+{% block crumb %}<strong>Notifications</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div><h1>Notifications</h1>
+    <p class="lead">Status changes, decisions and reminders from every department.</p></div>
+  {% if items %}
+    <div class="head-actions">
+      <form method="post" action="{{ url_for('citizen.mark_read') }}">
+        <button class="btn btn-outline" type="submit">Mark all as read</button>
+      </form>
+    </div>
+  {% endif %}
+</div>
+
+<div class="panel">
+  {% if items %}
+    <table>
+      <tbody>
+        {% for n in items %}
+          <tr style="{{ 'background:#FAFCFB' if n.read }}">
+            <td class="striped" style="--stripe: {% if n.category == 'success' %}var(--clear)
+              {% elif n.category == 'danger' %}var(--stop){% elif n.category == 'warning' %}var(--straw)
+              {% else %}var(--info){% endif %}">
+              <div style="font-weight:600">{{ n.title }}
+                {% if not n.read %}<span class="badge badge-pending">New</span>{% endif %}</div>
+              <div class="small">{{ n.message }}</div>
+              <div class="small muted">{{ n.created_at|ago }}</div>
+            </td>
+            <td class="text-right">
+              {% if n.link %}<a class="btn btn-outline btn-sm" href="{{ n.link }}">Open</a>{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="panel-body">
+      {{ empty("No notifications", "When a department acts on one of your applications, you will hear about it here.") }}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

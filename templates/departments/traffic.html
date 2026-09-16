@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import stat, empty %}
+{% block title %}Licences and vehicles{% endblock %}
+{% block crumb %}<strong>Licences and vehicles</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div class="striped" style="--stripe:var(--dept-TRF)">
+  <h1>Licences and vehicles</h1>
+  <p class="lead">Driver licensing and vehicle registration, both keyed to the verified
+     citizen profile.</p>
+</div></div>
+
+<div class="grid grid-3 mb-3">
+  {{ stat("Driver licences", licences|length) }}
+  {{ stat("Registered vehicles", vehicles|length) }}
+  {{ stat("Licences due within 60 days", expiring|length, "send renewal reminders", attention=expiring|length > 0) }}
+</div>
+
+<div class="grid grid-2 mb-3">
+  <form method="post" action="{{ url_for('departments.issue_licence') }}" class="panel">
+    <div class="panel-head"><h3>Issue a driver licence</h3></div>
+    <div class="panel-body">
+      <div class="field">
+        <label for="l_citizen">Citizen ID in this system</label>
+        <input type="number" id="l_citizen" name="citizen_id" required>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="licence_no">Licence number</label>
+          <input type="text" id="licence_no" name="licence_no" placeholder="Auto-generate if blank">
+        </div>
+        <div class="field">
+          <label for="licence_class">Class</label>
+          <select id="licence_class" name="licence_class">
+            <option value="A">A — motorcycles</option>
+            <option value="B" selected>B — light motor vehicles</option>
+            <option value="C">C — heavy motor vehicles</option>
+            <option value="EC">EC — articulated vehicles</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="issue_date">Date of issue</label>
+        <input type="date" id="issue_date" name="issue_date">
+        <div class="hint">Valid for five years from this date.</div>
+      </div>
+      <div class="field">
+        <label for="restrictions">Restrictions</label>
+        <input type="text" id="restrictions" name="restrictions" placeholder="Corrective lenses, automatic only">
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Issue licence</button>
+    </div>
+  </form>
+
+  <form method="post" action="{{ url_for('departments.register_vehicle') }}" class="panel">
+    <div class="panel-head"><h3>Register a vehicle</h3></div>
+    <div class="panel-body">
+      <div class="field">
+        <label for="v_citizen">Owner's citizen ID in this system</label>
+        <input type="number" id="v_citizen" name="citizen_id" required>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="registration_no">Registration number</label>
+          <input type="text" id="registration_no" name="registration_no" placeholder="A 1234" required>
+        </div>
+        <div class="field">
+          <label for="year">Year</label>
+          <input type="number" id="year" name="year" min="1950" max="2030" placeholder="2018">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="make">Make</label>
+          <input type="text" id="make" name="make" placeholder="Toyota"></div>
+        <div class="field"><label for="model">Model</label>
+          <input type="text" id="model" name="model" placeholder="Hilux"></div>
+        <div class="field"><label for="colour">Colour</label>
+          <input type="text" id="colour" name="colour" placeholder="White"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="engine_no">Engine number</label>
+          <input type="text" id="engine_no" name="engine_no"></div>
+        <div class="field"><label for="chassis_no">Chassis number</label>
+          <input type="text" id="chassis_no" name="chassis_no"></div>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Register vehicle</button>
+    </div>
+  </form>
+</div>
+
+<div class="grid grid-2">
+  <div class="panel">
+    <div class="panel-head"><h2>Driver licences</h2></div>
+    {% if licences %}
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Number</th><th>Holder</th><th>Class</th><th>Expires</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for l in licences %}
+            <tr>
+              <td class="mono-ref">{{ l.licence_no }}</td>
+              <td class="small">{{ l.citizen.full_name if l.citizen else '—' }}</td>
+              <td class="small">{{ l.licence_class }}</td>
+              <td class="small">{{ l.expiry_date.strftime('%d %b %Y') if l.expiry_date else '—' }}</td>
+              <td>{% if l.is_valid %}<span class="badge badge-approved">Valid</span>
+                  {% else %}<span class="badge badge-rejected">Expired</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    {% else %}
+      <div class="panel-body"><p class="small muted mb-0">No licences issued yet.</p></div>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>Vehicles</h2></div>
+    {% if vehicles %}
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Registration</th><th>Owner</th><th>Vehicle</th><th>Licence to</th><th></th></tr></thead>
+        <tbody>
+          {% for v in vehicles %}
+            <tr>
+              <td class="mono-ref">{{ v.registration_no }}</td>
+              <td class="small">{{ v.citizen.full_name if v.citizen else '—' }}</td>
+              <td class="small">{{ v.year or '' }} {{ v.make }} {{ v.model }}</td>
+              <td class="small">{{ v.licence_expiry.strftime('%d %b %Y') if v.licence_expiry else '—' }}
+                {% if not v.licence_valid %}<span class="badge badge-rejected">Lapsed</span>{% endif %}</td>
+              <td class="text-right">
+                <form method="post" action="{{ url_for('departments.renew_vehicle', veh_id=v.id) }}">
+                  <button class="btn btn-outline btn-sm" type="submit">Renew</button></form></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    {% else %}
+      <div class="panel-body"><p class="small muted mb-0">No vehicles registered yet.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

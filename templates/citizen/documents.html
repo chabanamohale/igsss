@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty %}
+{% block title %}Document wallet{% endblock %}
+{% block crumb %}My profile · <strong>Document wallet</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div>
+  <h1>Document wallet</h1>
+  <p class="lead">Upload a certificate once. After an officer verifies it, every
+     connected department can read it — you will not be asked for a certified copy again.</p>
+</div></div>
+
+<div class="grid grid-sidebar">
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Your documents</h2>
+      <span class="head-actions small muted">
+        {{ me.documents|selectattr('verified')|list|length }} of {{ me.documents|length }} verified</span>
+    </div>
+    {% if me.documents %}
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Document</th><th>Type</th><th>Uploaded</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for d in me.documents %}
+            <tr>
+              <td><a href="{{ url_for('citizen.open_document', doc_id=d.id) }}">{{ d.original_name }}</a>
+                <div class="small muted">{{ d.size_kb }} KB</div></td>
+              <td class="small">{{ d.doc_type }}</td>
+              <td class="small">{{ d.uploaded_at.strftime('%d %b %Y') }}</td>
+              <td>{% if d.verified %}
+                    <span class="badge badge-approved">Verified</span>
+                    <div class="small muted">{{ d.verified_by }}</div>
+                  {% else %}<span class="badge badge-neutral">Awaiting check</span>{% endif %}</td>
+              <td class="text-right">
+                {% if not d.verified %}
+                  <form method="post" action="{{ url_for('citizen.delete_document', doc_id=d.id) }}"
+                        data-confirm="Remove {{ d.original_name }}?" style="display:inline">
+                    <button class="btn btn-outline btn-sm" type="submit">Remove</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    {% else %}
+      <div class="panel-body">
+        {{ empty("Your wallet is empty",
+                 "Add your birth certificate, photographs or medical certificate now, and reuse them on every future application.") }}
+      </div>
+    {% endif %}
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="panel" style="height:fit-content">
+    <div class="panel-head"><h3>Add a document</h3></div>
+    <div class="panel-body">
+      <div class="field">
+        <label for="doc_type">What is it?</label>
+        <select id="doc_type" name="doc_type">
+          <option>Birth certificate</option>
+          <option>Marriage certificate</option>
+          <option>Passport photograph</option>
+          <option>Certified ID copy</option>
+          <option>Medical certificate</option>
+          <option>Proof of residence</option>
+          <option>Employment letter</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="document">File</label>
+        <input type="file" id="document" name="document" required
+               accept=".pdf,.png,.jpg,.jpeg,.docx">
+        <div class="hint">PDF, JPG, PNG or DOCX, up to 8 MB.</div>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Add to wallet</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

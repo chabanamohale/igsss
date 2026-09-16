@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import stat, bar %}
+{% block title %}Reports{% endblock %}
+{% block crumb %}<strong>Reports</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ dept.name if dept else 'All departments' }} — performance</h1>
+    <p class="lead">Generated {{ now.strftime('%d %B %Y') }} for
+       {{ current_user.display_name }}.</p></div>
+  <div class="head-actions no-print">
+    <button class="btn btn-outline" onclick="window.print()">Print</button>
+  </div>
+</div>
+
+<div class="grid grid-4 mb-3">
+  {{ stat("Applications handled", total) }}
+  {{ stat("Closed", approved, "approved, collected or refused") }}
+  {{ stat("Average turnaround", (turnaround ~ ' days') if turnaround is not none else '—') }}
+  {{ stat("Revenue collected", revenue|money) }}
+</div>
+
+<div class="panel mb-3">
+  <div class="panel-head"><h2>Applications, last 14 days</h2></div>
+  <div class="panel-body"><div class="chart-box small"><canvas id="chart-trend"></canvas></div></div>
+</div>
+
+<div class="grid grid-2">
+  <div class="panel">
+    <div class="panel-head"><h2>By status</h2></div>
+    <div class="panel-body">
+      {% set peak = by_status.values()|max if by_status else 1 %}
+      <div class="bars">
+        {% for status, count in by_status.most_common() %}{{ bar(status, count, peak) }}{% endfor %}
+      </div>
+      {% if not by_status %}<p class="small muted mb-0">No applications to report on.</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>Most requested services</h2></div>
+    <div class="panel-body">
+      {% set peak = by_service[0][1] if by_service else 1 %}
+      <div class="bars">
+        {% for name, count in by_service %}{{ bar(name, count, peak) }}{% endfor %}
+      </div>
+      {% if not by_service %}<p class="small muted mb-0">Nothing to rank yet.</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>Where applicants live</h2></div>
+    <div class="panel-body">
+      {% set peak = by_district[0][1] if by_district else 1 %}
+      <div class="bars">
+        {% for name, count in by_district %}{{ bar(name, count, peak, 'var(--dept-PEN)') }}{% endfor %}
+      </div>
+      {% if not by_district %}<p class="small muted mb-0">No district data recorded.</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>Applications by month</h2></div>
+    <div class="panel-body">
+      {% set peak = monthly|map(attribute=1)|max if monthly else 1 %}
+      <div class="bars">
+        {% for label, count in monthly %}{{ bar(label, count, peak, 'var(--dept-TRF)') }}{% endfor %}
+      </div>
+      {% if not monthly %}<p class="small muted mb-0">No history yet.</p>{% endif %}
+    </div>
+  </div>
+</div>
+
+<p class="small muted mt-3">This report reads only from the applications your department
+   owns. Figures update the moment an officer records a decision.</p>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script>
+fetch("{{ url_for('api.stats') }}").then(function (r) { return r.json(); }).then(function (d) {
+  var days = d.last_14_days.map(function (x) { return x.date.slice(5); });
+  var counts = d.last_14_days.map(function (x) { return x.count; });
+  new Chart(document.getElementById("chart-trend"), {
+    type: "bar",
+    data: { labels: days, datasets: [{ label: "Applications", data: counts, backgroundColor: "#016A5D" }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+}).catch(function () {});
+</script>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import stat, status_badge, empty %}
+{% block title %}Passport services{% endblock %}
+{% block crumb %}<strong>Passport services</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div class="striped" style="--stripe:var(--dept-PAS)">
+  <h1>Passport services</h1>
+  <p class="lead">Travel documents are issued only against a Home Affairs verified
+     identity — the system enforces that.</p>
+</div></div>
+
+<div class="grid grid-3 mb-3">
+  {{ stat("Passports on the register", passports|length) }}
+  {{ stat("Applications in progress", queue|length) }}
+  {{ stat("Expiring within a year", expiring|length, "renewal reminders due", attention=expiring|length > 0) }}
+</div>
+
+<div class="grid grid-sidebar">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><h2>Applications in progress</h2></div>
+      {% if queue %}
+        <div class="table-wrap">
+        <table class="records">
+          <thead><tr><th>Reference</th><th>Applicant</th><th>Status</th><th>Due</th><th></th></tr></thead>
+          <tbody>
+            {% for a in queue %}
+              <tr style="--stripe: var(--dept-PAS)">
+                <td class="mono-ref">{{ a.reference }}</td>
+                <td>{{ a.citizen.full_name }}<div class="small muted">{{ a.citizen.national_id }}</div></td>
+                <td>{{ status_badge(a.status, a.is_overdue) }}</td>
+                <td class="small">{{ a.due_date.strftime('%d %b') if a.due_date else '—' }}</td>
+                <td class="text-right">
+                  <a class="btn btn-outline btn-sm" href="{{ url_for('employee.application_detail', app_id=a.id) }}">Open</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        </div>
+      {% else %}
+        <div class="panel-body">{{ empty("No passport applications open", "The queue is clear.") }}</div>
+      {% endif %}
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Passport register</h2>
+        <span class="head-actions">
+          <input type="search" placeholder="Filter" data-filter-table="#pp-table" style="width:180px"></span>
+      </div>
+      {% if passports %}
+        <div class="table-wrap">
+        <table id="pp-table">
+          <thead><tr><th>Number</th><th>Holder</th><th>Type</th><th>Issued</th>
+            <th>Expires</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for p in passports %}
+              <tr>
+                <td class="mono-ref">{{ p.passport_no }}</td>
+                <td class="small">{{ p.citizen.full_name if p.citizen else '—' }}</td>
+                <td class="small">{{ p.passport_type }}</td>
+                <td class="small">{{ p.issue_date.strftime('%d %b %Y') if p.issue_date else '—' }}</td>
+                <td class="small">{{ p.expiry_date.strftime('%d %b %Y') if p.expiry_date else '—' }}</td>
+                <td>{% if p.is_valid %}<span class="badge badge-approved">Valid</span>
+                    {% else %}<span class="badge badge-rejected">Expired</span>{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        </div>
+      {% else %}
+        <div class="panel-body"><p class="small muted mb-0">No passports issued yet.</p></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <form method="post" action="{{ url_for('departments.issue_passport') }}" class="panel" style="height:fit-content">
+    <div class="panel-head"><h3>Issue a passport</h3></div>
+    <div class="panel-body">
+      <div class="field">
+        <label for="citizen_id">Citizen ID in this system</label>
+        <input type="number" id="citizen_id" name="citizen_id" required>
+        <div class="hint">The identity must already be verified.</div>
+      </div>
+      <div class="field">
+        <label for="passport_no">Passport number</label>
+        <input type="text" id="passport_no" name="passport_no" placeholder="Leave blank to generate one">
+      </div>
+      <div class="field">
+        <label for="passport_type">Type</label>
+        <select id="passport_type" name="passport_type">
+          <option>Ordinary</option><option>Official</option>
+          <option>Diplomatic</option><option>Emergency travel document</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="issue_date">Date of issue</label>
+        <input type="date" id="issue_date" name="issue_date">
+        <div class="hint">Valid for ten years from this date.</div>
+      </div>
+      <div class="field">
+        <label for="issuing_office">Issuing office</label>
+        <input type="text" id="issuing_office" name="issuing_office" value="Maseru Head Office">
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Issue passport</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

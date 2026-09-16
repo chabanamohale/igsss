@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Service catalogue{% endblock %}
+{% block crumb %}<strong>Service catalogue</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div>
+  <h1>Service catalogue</h1>
+  <p class="lead">Closing a service hides it from citizens without deleting the
+     applications already in the queue.</p>
+</div></div>
+
+<div class="grid grid-sidebar">
+  <div class="panel">
+    <div class="panel-head"><h2>{{ services|length }} services</h2>
+      <span class="head-actions">
+        <input type="search" placeholder="Filter" data-filter-table="#svc-table" style="width:180px"></span>
+    </div>
+    <div class="table-wrap">
+    <table id="svc-table" class="records">
+      <thead><tr><th>Service</th><th>Code</th><th>Department</th><th>Fee</th>
+        <th>Days</th><th>Open</th><th></th></tr></thead>
+      <tbody>
+        {% for s in services %}
+          <tr style="--stripe: {{ s.department.colour }}">
+            <td><strong>{{ s.name }}</strong>
+              <div class="small muted">{{ s.description|truncate(60) if s.description }}</div></td>
+            <td class="mono-ref">{{ s.code }}</td>
+            <td class="small">{{ s.department.name }}</td>
+            <td>{{ s.fee|money }}</td>
+            <td>{{ s.processing_days }}</td>
+            <td>{% if s.active %}<span class="badge badge-approved">Open</span>
+                {% else %}<span class="badge badge-rejected">Closed</span>{% endif %}</td>
+            <td class="text-right">
+              <form method="post" action="{{ url_for('admin.toggle_service', service_id=s.id) }}">
+                <button class="btn btn-outline btn-sm" type="submit">
+                  {{ 'Close' if s.active else 'Open' }}</button></form></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <form method="post" class="panel" style="height:fit-content">
+    <div class="panel-head"><h3>Add a service</h3></div>
+    <div class="panel-body">
+      <div class="field">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" required placeholder="Renew a driver licence">
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="code">Code</label>
+          <input type="text" id="code" name="code" maxlength="12" required placeholder="TRF-DLR"></div>
+        <div class="field"><label for="department_id">Department</label>
+          <select id="department_id" name="department_id" required>
+            {% for d in all_departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}
+          </select></div>
+      </div>
+      <div class="field">
+        <label for="description">What it is</label>
+        <textarea id="description" name="description"
+          placeholder="Write it the way a citizen would describe it, not the way the office files it."></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="fee">Fee (M)</label>
+          <input type="number" step="0.01" min="0" id="fee" name="fee" value="0"></div>
+        <div class="field"><label for="processing_days">Working days</label>
+          <input type="number" min="1" id="processing_days" name="processing_days" value="14"></div>
+      </div>
+      <div class="field">
+        <label for="required_documents">Documents required</label>
+        <textarea id="required_documents" name="required_documents"
+          placeholder="One per line&#10;Valid national ID&#10;Two passport photographs"></textarea>
+        <div class="hint">One document per line.</div>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Add service</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

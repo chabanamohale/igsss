@@ -1,0 +1,49 @@
+{% extends "public.html" %}
+{% from "partials/macros.html" import status_badge %}
+{% block title %}Track an application{% endblock %}
+{% block body %}
+<section class="section">
+  <div class="section-inner" style="max-width:640px">
+    <h1>Track an application</h1>
+    <p class="muted">Enter the reference from your receipt, for example APP-7F3K2Q.</p>
+
+    <form method="post" class="panel mb-3">
+      <div class="panel-body">
+        <div class="field">
+          <label for="reference">Application reference</label>
+          <input type="text" id="reference" name="reference" value="{{ reference }}"
+                 placeholder="APP-XXXXXX" required autocomplete="off">
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Check status</button>
+      </div>
+    </form>
+
+    {% if searched and application %}
+      <div class="panel striped" style="--stripe: {{ application.department.colour }}">
+        <div class="panel-head">
+          <h2 class="mono-ref">{{ application.reference }}</h2>
+          <span style="margin-left:auto">{{ status_badge(application.status, application.is_overdue) }}</span>
+        </div>
+        <div class="panel-body">
+          <dl class="deflist mb-2">
+            <dt>Service</dt><dd>{{ application.service.name }}</dd>
+            <dt>Department</dt><dd>{{ application.department.name }}</dd>
+            <dt>Submitted</dt><dd>{{ application.submitted_at.strftime('%d %B %Y') }}</dd>
+            <dt>Expected by</dt><dd>{{ application.due_date.strftime('%d %B %Y') if application.due_date else '—' }}</dd>
+          </dl>
+          <div class="track {{ 'stop' if application.status == 'Rejected' }}">
+            <span style="width: {{ application.progress }}%"></span>
+          </div>
+          <p class="small muted mt-2 mb-0">Sign in to see the full case history,
+             pay any outstanding fee, or upload a missing document.</p>
+        </div>
+      </div>
+    {% elif searched %}
+      <div class="alert alert-warning">
+        No application matches “{{ reference }}”. Check the reference on your receipt —
+        it has three letters, a dash, then six characters.
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

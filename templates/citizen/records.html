@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}My records{% endblock %}
+{% block crumb %}My profile · <strong>My records</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div>
+  <h1>My records</h1>
+  <p class="lead">Everything the six connected departments hold on you, in one view.
+     The coloured bar names the department that owns each record.</p>
+</div></div>
+
+<div class="grid grid-2">
+
+  <div class="panel">
+    <div class="panel-head"><span class="dept-tag" style="--stripe:var(--dept-HA)">Home Affairs</span></div>
+    <div class="panel-body">
+      <h4>Civil registration</h4>
+      {% if me.civil_records %}
+        <table><tbody>
+          {% for r in me.civil_records %}
+            <tr><td><strong>{{ r.record_type }}</strong>
+              <div class="small muted">{{ r.reference }} · {{ r.place or '—' }}</div></td>
+              <td class="text-right small">{{ r.event_date.strftime('%d %b %Y') if r.event_date else '—' }}</td></tr>
+          {% endfor %}
+        </tbody></table>
+      {% else %}<p class="small muted mb-0">No civil records on file.</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><span class="dept-tag" style="--stripe:var(--dept-PAS)">Passport Services</span></div>
+    <div class="panel-body">
+      {% if me.passports %}
+        {% for p in me.passports %}
+          <dl class="deflist mb-2">
+            <dt>Number</dt><dd class="mono-ref">{{ p.passport_no }}</dd>
+            <dt>Type</dt><dd>{{ p.passport_type }}</dd>
+            <dt>Expires</dt><dd>{{ p.expiry_date.strftime('%d %b %Y') if p.expiry_date }}
+              {% if p.is_valid %}<span class="badge badge-approved">Valid</span>
+              {% else %}<span class="badge badge-rejected">Expired</span>{% endif %}</dd>
+          </dl>
+        {% endfor %}
+      {% else %}<p class="small muted mb-0">No passport on file.</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><span class="dept-tag" style="--stripe:var(--dept-TRF)">Traffic and Transport</span></div>
+    <div class="panel-body">
+      <h4>Driver licence</h4>
+      {% if me.licences %}
+        {% for l in me.licences %}
+          <dl class="deflist mb-2">
+            <dt>Number</dt><dd class="mono-ref">{{ l.licence_no }}</dd>
+            <dt>Class</dt><dd>{{ l.licence_class }}</dd>
+            <dt>Expires</dt><dd>{{ l.expiry_date.strftime('%d %b %Y') if l.expiry_date }}
+              {% if l.is_valid %}<span class="badge badge-approved">Valid</span>
+              {% else %}<span class="badge badge-rejected">Expired</span>{% endif %}</dd>
+          </dl>
+        {% endfor %}
+      {% else %}<p class="small muted">No driver licence on file.</p>{% endif %}
+
+      <h4 class="mt-2">Vehicles</h4>
+      {% if me.vehicles %}
+        <table><tbody>
+          {% for v in me.vehicles %}
+            <tr><td><strong class="mono-ref">{{ v.registration_no }}</strong>
+              <div class="small muted">{{ v.year or '' }} {{ v.make }} {{ v.model }} · {{ v.colour }}</div></td>
+              <td class="text-right small">Licence to {{ v.licence_expiry.strftime('%d %b %Y') if v.licence_expiry else '—' }}</td></tr>
+          {% endfor %}
+        </tbody></table>
+      {% else %}<p class="small muted mb-0">No vehicles registered to you.</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><span class="dept-tag" style="--stripe:var(--dept-POL)">Police</span></div>
+    <div class="panel-body">
+      {% if me.police_records %}
+        <table><tbody>
+          {% for r in me.police_records %}
+            <tr><td><strong class="mono-ref">{{ r.case_number }}</strong>
+              <div class="small muted">{{ r.record_type }} · {{ r.station or '' }}</div></td>
+              <td class="text-right">
+                {% if r.clearance_status == 'Clear' %}<span class="badge badge-approved">Clear</span>
+                {% elif r.clearance_status == 'Flagged' %}<span class="badge badge-rejected">Flagged</span>
+                {% else %}<span class="badge badge-pending">Pending</span>{% endif %}</td></tr>
+          {% endfor %}
+        </tbody></table>
+      {% else %}<p class="small muted mb-0">No police records on file.</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><span class="dept-tag" style="--stripe:var(--dept-FIN)">Finance</span></div>
+    <div class="panel-body">
+      {% if me.finance_record %}
+        <dl class="deflist">
+          <dt>Tax number</dt><dd class="mono-ref">{{ me.finance_record.tax_number }}</dd>
+          <dt>Status</dt><dd>{{ me.finance_record.tax_status }}</dd>
+          <dt>Balance owing</dt><dd>{{ me.finance_record.outstanding_balance|money }}</dd>
+          <dt>Last filed</dt><dd>{{ me.finance_record.last_filed.strftime('%d %b %Y') if me.finance_record.last_filed else '—' }}</dd>
+        </dl>
+      {% else %}<p class="small muted mb-0">No taxpayer account on file.</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><span class="dept-tag" style="--stripe:var(--dept-PEN)">Pensions</span></div>
+    <div class="panel-body">
+      {% if me.pension_records %}
+        {% for r in me.pension_records %}
+          <dl class="deflist mb-2">
+            <dt>Grant</dt><dd>{{ r.grant_type }}</dd>
+            <dt>Number</dt><dd class="mono-ref">{{ r.pension_no }}</dd>
+            <dt>Monthly</dt><dd>{{ r.monthly_amount|money }}</dd>
+            <dt>Pay point</dt><dd>{{ r.pay_point }}</dd>
+            <dt>Status</dt><dd>{{ r.status }}</dd>
+          </dl>
+        {% endfor %}
+      {% elif me.pension_eligible %}
+        <p class="small mb-0">You are {{ me.age }}, which meets the age condition for the
+           Old Age Pension. Apply through the Pensions department to be enrolled.</p>
+      {% else %}
+        <p class="small muted mb-0">No grants on file. The Old Age Pension starts at 70.</p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

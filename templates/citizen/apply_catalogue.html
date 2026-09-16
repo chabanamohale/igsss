@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Apply for a service{% endblock %}
+{% block crumb %}<strong>Apply for a service</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <h1>Apply for a service</h1>
+  <p class="lead">Details you have already given are filled in for you. Verified
+     documents in your wallet are attached automatically.</p>
+</div></div>
+
+<div class="filter-bar">
+  <a class="chip {{ 'active' if not selected }}" href="{{ url_for('citizen.apply_catalogue') }}">All</a>
+  {% for d in all_departments %}
+    <a class="chip {{ 'active' if selected == d.code }}"
+       href="{{ url_for('citizen.apply_catalogue', department=d.code) }}">{{ d.name }}</a>
+  {% endfor %}
+</div>
+
+<div class="grid grid-3">
+  {% for s in services %}
+    <a class="service-card" style="--stripe: {{ s.department.colour }};color:inherit"
+       href="{{ url_for('citizen.apply', code=s.code) }}">
+      <span class="dept-tag mb-1" style="--stripe: {{ s.department.colour }}">{{ s.department.name }}</span>
+      <h3>{{ s.name }}</h3>
+      <p class="small muted">{{ s.description|truncate(110) }}</p>
+      <div class="svc-meta">
+        <span>{{ s.fee|money }}</span><span>{{ s.processing_days }} days</span>
+      </div>
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}

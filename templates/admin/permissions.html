@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Access matrix{% endblock %}
+{% block crumb %}<strong>Access matrix</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div>
+  <h1>Cross-department access matrix</h1>
+  <p class="lead">Which record areas each department may read on a citizen profile.
+     The system enforces this on every page and every route, not just in the interface.</p>
+</div></div>
+
+<div class="panel mb-3">
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Record area</th>
+        {% for d in departments %}<th style="text-align:center">{{ d.code }}</th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for area, label in labels.items() %}
+        <tr>
+          <td><strong>{{ label }}</strong></td>
+          {% for d in departments %}
+            <td style="text-align:center">
+              {% if area in matrix.get(d.code, []) %}
+                <span title="{{ d.name }} may read {{ label|lower }}"
+                      style="display:inline-block;width:14px;height:14px;border-radius:3px;
+                             background: {{ d.colour }}"></span>
+              {% else %}
+                <span class="muted" title="Not permitted">·</span>
+              {% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="grid grid-3">
+  {% for d in departments %}
+    <div class="dept-card" style="--stripe: {{ d.colour }}">
+      <h3>{{ d.name }}</h3>
+      <p class="small">Cleared to read:</p>
+      <ul class="small" style="padding-left:1.1rem;margin:0">
+        {% for area in matrix.get(d.code, []) %}
+          <li>{{ labels.get(area, area) }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endfor %}
+</div>
+
+<div class="locked mt-3">
+  <strong>Changing the matrix.</strong> These rules live in
+  <code>utils/security.py</code> as <code>ACCESS_MATRIX</code>. Editing them there
+  changes behaviour everywhere at once, which is why they are deliberately not editable
+  from this screen.
+</div>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import stat %}
+{% block title %}System overview{% endblock %}
+{% block crumb %}<strong>System overview</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div><h1>System overview</h1>
+    <p class="lead">Every department, account and record on the platform.</p></div>
+  <div class="head-actions">
+    <a class="btn btn-outline" href="{{ url_for('admin.audit') }}">Audit log</a>
+    <a class="btn btn-primary" href="{{ url_for('admin.new_user') }}">Create an account</a>
+  </div>
+</div>
+
+<div class="grid grid-4 mb-3">
+  {{ stat("Accounts", stats.users, stats.citizens ~ " citizens, " ~ stats.employees ~ " staff") }}
+  {{ stat("Applications", stats.applications, stats.open ~ " still open") }}
+  {{ stat("Past due date", stats.overdue, "breaching service standards", attention=stats.overdue > 0) }}
+  {{ stat("Revenue collected", stats.revenue|money, "all departments") }}
+</div>
+
+<div class="grid grid-2 mb-3">
+  <div class="panel">
+    <div class="panel-head"><h2>Applications, last 14 days</h2></div>
+    <div class="panel-body"><div class="chart-box small"><canvas id="chart-trend"></canvas></div></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>Load by department</h2></div>
+    <div class="panel-body"><div class="chart-box small"><canvas id="chart-dept"></canvas></div></div>
+  </div>
+</div>
+
+<div class="grid grid-sidebar">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><h2>Departmental load</h2></div>
+      <div class="table-wrap">
+      <table class="records">
+        <thead><tr><th>Department</th><th>Staff</th><th>Total</th><th>Open</th>
+          <th>Overdue</th><th>Services</th></tr></thead>
+        <tbody>
+          {% for row in load %}
+            <tr style="--stripe: {{ row.dept.colour }}">
+              <td><strong>{{ row.dept.name }}</strong>
+                <div class="small muted">{{ row.dept.ministry or '' }}</div></td>
+              <td>{{ row.staff }}</td>
+              <td>{{ row.total }}</td>
+              <td>{{ row.open }}</td>
+              <td>{% if row.overdue %}<span class="badge badge-overdue">{{ row.overdue }}</span>
+                  {% else %}<span class="small muted">0</span>{% endif %}</td>
+              <td>{{ row.dept.services|length }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Latest system activity</h2>
+        <span class="head-actions"><a class="small" href="{{ url_for('admin.audit') }}">Full log</a></span>
+      </div>
+      <table>
+        <tbody>
+          {% for l in recent_logs %}
+            <tr>
+              <td class="small nowrap">{{ l.timestamp.strftime('%d %b %H:%M') }}</td>
+              <td><span class="badge badge-neutral">{{ l.action }}</span></td>
+              <td class="small">{{ l.actor }}
+                {% if l.department %}<div class="muted">{{ l.department }}</div>{% endif %}</td>
+              <td class="small">{{ l.description or '' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><h3>Needs attention</h3></div>
+      <div class="panel-body stack">
+        {% if stats.unverified %}
+          <div class="striped" style="--stripe: var(--straw)">
+            <strong>{{ stats.unverified }} unverified profile{{ '' if stats.unverified == 1 else 's' }}</strong>
+            <div class="small muted">Citizens cannot apply until Home Affairs clears them.</div>
+          </div>
+        {% endif %}
+        {% if stats.suspended %}
+          <div class="striped" style="--stripe: var(--stop)">
+            <strong>{{ stats.suspended }} suspended account{{ '' if stats.suspended == 1 else 's' }}</strong>
+            <div class="small muted"><a href="{{ url_for('admin.users') }}">Review them</a></div>
+          </div>
+        {% endif %}
+        {% if failed_signins %}
+          <div class="striped" style="--stripe: var(--stop)">
+            <strong>{{ failed_signins }} failed sign-in{{ '' if failed_signins == 1 else 's' }} this week</strong>
+            <div class="small muted">Check the audit log if this looks unusual.</div>
+          </div>
+        {% endif %}
+        {% if not stats.unverified and not stats.suspended and not failed_signins %}
+          <p class="small muted mb-0">Nothing needs your attention right now.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Catalogue</h3></div>
+      <div class="panel-body">
+        <dl class="deflist">
+          <dt>Departments</dt><dd>{{ stats.departments }}</dd>
+          <dt>Services</dt><dd>{{ stats.services }}</dd>
+          <dt>Documents stored</dt><dd>{{ stats.documents }}</dd>
+        </dl>
+        <a class="btn btn-outline btn-sm btn-block mt-2" href="{{ url_for('admin.services') }}">Manage services</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script>
+fetch("{{ url_for('api.stats') }}").then(function (r) { return r.json(); }).then(function (d) {
+  var days = d.last_14_days.map(function (x) { return x.date.slice(5); });
+  var counts = d.last_14_days.map(function (x) { return x.count; });
+  new Chart(document.getElementById("chart-trend"), {
+    type: "line",
+    data: { labels: days, datasets: [{ label: "Applications", data: counts,
+      borderColor: "#00453D", backgroundColor: "rgba(0,69,61,.12)", fill: true, tension: .35 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+  var deptLabels = Object.keys(d.by_department);
+  var deptCounts = Object.values(d.by_department);
+  var palette = ["#00453D","#1F3D6B","#8A5A17","#0F5F63","#5B3A6E","#7A2E33","#4A5A54"];
+  new Chart(document.getElementById("chart-dept"), {
+    type: "doughnut",
+    data: { labels: deptLabels, datasets: [{ data: deptCounts, backgroundColor: palette }] },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+}).catch(function () { /* charts are a bonus view; the tables above still work */ });
+</script>
+{% endblock %}

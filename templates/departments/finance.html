@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import stat, bar, empty %}
+{% block title %}Revenue and accounts{% endblock %}
+{% block crumb %}<strong>Revenue and accounts</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div class="striped" style="--stripe:var(--dept-FIN)">
+  <h1>Revenue and accounts</h1>
+  <p class="lead">One payment channel across all six departments, so revenue reconciles
+     against the service that generated it.</p>
+</div></div>
+
+<div class="grid grid-3 mb-3">
+  {{ stat("Collected", collected|money, "cleared payments") }}
+  {{ stat("Outstanding", outstanding|money, "raised but unpaid", attention=outstanding > 0) }}
+  {{ stat("Taxpayer accounts", accounts|length) }}
+</div>
+
+<div class="grid grid-sidebar">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-head"><h2>Revenue by department</h2></div>
+      <div class="panel-body">
+        {% set peak = by_department[0][1] if by_department else 1 %}
+        <div class="bars">
+          {% for name, amount in by_department %}
+            {{ bar(name, amount|round(0)|int, peak, 'var(--dept-FIN)') }}
+          {% endfor %}
+        </div>
+        {% if not by_department %}<p class="small muted mb-0">No cleared payments yet.</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2>Transactions</h2>
+        <span class="head-actions">
+          <input type="search" placeholder="Filter" data-filter-table="#pay-table" style="width:180px"></span>
+      </div>
+      {% if payments %}
+        <div class="table-wrap">
+        <table id="pay-table" class="records">
+          <thead><tr><th>Receipt</th><th>Payer</th><th>For</th><th>Amount</th>
+            <th>Method</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {% for p in payments %}
+              <tr style="--stripe: {{ p.application.department.colour if p.application else 'var(--rule)' }}">
+                <td class="mono-ref">{{ p.reference }}</td>
+                <td class="small">{{ p.citizen.full_name if p.citizen else '—' }}</td>
+                <td class="small">{{ p.description }}</td>
+                <td><strong>{{ p.amount|money }}</strong></td>
+                <td class="small">{{ p.method or '—' }}</td>
+                <td>{% if p.status == 'Paid' %}<span class="badge badge-approved">Paid</span>
+                    {% elif p.status == 'Reversed' %}<span class="badge badge-rejected">Reversed</span>
+                    {% else %}<span class="badge badge-pending">Due</span>{% endif %}</td>
+                <td class="text-right">
+                  {% if p.status == 'Paid' %}
+                    <form method="post" action="{{ url_for('departments.reverse_payment', pay_id=p.id) }}"
+                          data-confirm="Reverse receipt {{ p.reference }}? This reopens the fee.">
+                      <button class="btn btn-outline btn-sm" type="submit">Reverse</button></form>
+                  {% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        </div>
+      {% else %}
+        <div class="panel-body">{{ empty("No transactions", "Fees appear here as citizens apply for chargeable services.") }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="stack">
+    <form method="post" action="{{ url_for('departments.update_account') }}" class="panel">
+      <div class="panel-head"><h3>Update a taxpayer account</h3></div>
+      <div class="panel-body">
+        <div class="field">
+          <label for="citizen_id">Citizen ID in this system</label>
+          <input type="number" id="citizen_id" name="citizen_id" required>
+          <div class="hint">An account is opened automatically if none exists.</div>
+        </div>
+        <div class="field">
+          <label for="tax_status">Compliance status</label>
+          <select id="tax_status" name="tax_status">
+            <option>Compliant</option><option>Return outstanding</option>
+            <option>Payment arrangement</option><option>In arrears</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="outstanding_balance">Balance owing (M)</label>
+          <input type="number" step="0.01" min="0" id="outstanding_balance" name="outstanding_balance" value="0">
+        </div>
+        <div class="field">
+          <label for="last_filed">Last return filed</label>
+          <input type="date" id="last_filed" name="last_filed">
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Save account</button>
+      </div>
+    </form>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Accounts</h3></div>
+      {% if accounts %}
+        <table>
+          <tbody>
+            {% for a in accounts %}
+              <tr>
+                <td><strong class="mono-ref">{{ a.tax_number }}</strong>
+                  <div class="small muted">{{ a.citizen.full_name if a.citizen else '—' }}</div></td>
+                <td class="text-right">{{ a.outstanding_balance|money }}
+                  <div class="small muted">{{ a.tax_status }}</div></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="panel-body"><p class="small muted mb-0">No taxpayer accounts opened.</p></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

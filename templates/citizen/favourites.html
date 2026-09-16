@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty, star_display, fav_button %}
+{% block title %}Favourites{% endblock %}
+{% block crumb %}My services · <strong>Favourites</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div>
+  <h1>Your favourite services</h1>
+  <p class="lead">Save services you apply for often so they are one click away.</p>
+</div></div>
+
+{% if favourites %}
+  <div class="grid grid-3">
+    {% for f in favourites %}
+      <div class="service-card tilt-card" style="--stripe: {{ f.service.department.colour }};position:relative" data-reveal="scale">
+        <div style="position:absolute;top:.7rem;right:.7rem;z-index:2">
+          {{ fav_button(f.service, true) }}
+        </div>
+        <a href="{{ url_for('main.service_detail', code=f.service.code) }}" style="color:inherit;text-decoration:none">
+          <span class="dept-tag mb-1" style="--stripe: {{ f.service.department.colour }}">{{ f.service.department.name }}</span>
+          <h3>{{ f.service.name }}</h3>
+          <div class="svc-meta">
+            <span>{{ f.service.fee|money }}</span>
+            <span>{{ f.service.processing_days }} days</span>
+          </div>
+          <div class="mt-1">{{ star_display(f.service.average_rating, f.service.review_count) }}</div>
+        </a>
+        <a class="btn btn-primary btn-sm btn-block mt-2" href="{{ url_for('citizen.apply', code=f.service.code) }}">Apply now</a>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="panel"><div class="panel-body">
+    {{ empty("No favourites yet", "Tap the heart on any service to save it here for quick access.",
+             url_for('main.services'), "Browse services") }}
+  </div></div>
+{% endif %}
+{% endblock %}

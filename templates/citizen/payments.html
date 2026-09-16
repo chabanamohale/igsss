@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import stat, empty %}
+{% block title %}Payments{% endblock %}
+{% block crumb %}<strong>Payments</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div>
+  <h1>Payments</h1>
+  <p class="lead">Every government fee you have paid, across all six departments,
+     with a receipt you can print.</p>
+</div></div>
+
+<div class="grid grid-3 mb-3">
+  {{ stat("Paid to date", paid|money, "all departments") }}
+  {{ stat("Outstanding", pending|money, "blocking applications", attention=pending > 0) }}
+  {{ stat("Transactions", me.payments|length) }}
+</div>
+
+<div class="panel">
+  <div class="panel-head"><h2>Transactions</h2></div>
+  {% if me.payments %}
+    <div class="table-wrap">
+    <table class="records">
+      <thead><tr><th>Reference</th><th>For</th><th>Amount</th><th>Method</th>
+        <th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for p in me.payments|sort(attribute='created_at', reverse=true) %}
+          <tr style="--stripe: {{ p.application.department.colour if p.application else 'var(--rule)' }}">
+            <td class="mono-ref">{{ p.reference }}</td>
+            <td>{{ p.description }}
+              {% if p.application %}<div class="small muted">{{ p.application.reference }}</div>{% endif %}</td>
+            <td><strong>{{ p.amount|money }}</strong></td>
+            <td class="small">{{ p.method or '—' }}</td>
+            <td>
+              {% if p.status == 'Paid' %}<span class="badge badge-approved">Paid</span>
+              {% elif p.status == 'Reversed' %}<span class="badge badge-rejected">Reversed</span>
+              {% else %}<span class="badge badge-pending">Due</span>{% endif %}
+            </td>
+            <td class="text-right">
+              {% if p.status == 'Pending' %}
+                <form method="post" action="{{ url_for('citizen.pay', pay_id=p.id) }}"
+                      class="flex" style="justify-content:flex-end">
+                  <select name="method" style="width:auto">
+                    <option>M-Pesa</option><option>EcoCash</option>
+                    <option>Bank Transfer</option><option>Cash at counter</option>
+                  </select>
+                  <button class="btn btn-straw btn-sm" type="submit">Pay</button>
+                </form>
+              {% elif p.status == 'Paid' %}
+                <a class="btn btn-outline btn-sm" href="{{ url_for('citizen.receipt', pay_id=p.id) }}">Receipt</a>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <div class="panel-body">
+      {{ empty("No payments yet",
+               "Fees appear here as soon as you apply for a service that charges one.",
+               url_for('citizen.apply_catalogue'), "Browse services") }}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "public.html" %}
+{% block title %}{{ code }}{% endblock %}
+{% block body %}
+<section class="section">
+  <div class="section-inner" style="max-width:640px">
+    <div class="panel">
+      <div class="panel-body">
+        <div class="numeral" style="font-size:3rem;color:var(--ink-faint);line-height:1">{{ code }}</div>
+        <h1 style="margin-top:.25rem">{{ heading }}</h1>
+        <p>{{ detail }}</p>
+        <div class="flex">
+          <a class="btn btn-primary" href="{{ url_for('main.home') }}">Go to the home page</a>
+          {% if current_user.is_authenticated %}
+            <a class="btn btn-outline" href="{{ url_for('main.dashboard_router') }}">My dashboard</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

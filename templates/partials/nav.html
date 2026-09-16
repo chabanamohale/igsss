@@ -1,0 +1,89 @@
+{# Sidebar navigation. Renders only what this user's role can reach. #}
+{% set ep = request.endpoint %}
+
+{% if current_user.is_citizen %}
+  <div class="sidebar-section">My services</div>
+  <ul class="sidebar-nav">
+    <li><a href="{{ url_for('citizen.dashboard') }}" class="{{ 'active' if ep == 'citizen.dashboard' }}">Dashboard</a></li>
+    <li><a href="{{ url_for('citizen.apply_catalogue') }}" class="{{ 'active' if ep in ['citizen.apply_catalogue','citizen.apply'] }}">Apply for a service</a></li>
+    <li><a href="{{ url_for('citizen.applications') }}" class="{{ 'active' if ep in ['citizen.applications','citizen.application_detail'] }}">My applications</a></li>
+    <li><a href="{{ url_for('citizen.payments') }}" class="{{ 'active' if ep in ['citizen.payments','citizen.receipt'] }}">Payments</a></li>
+    <li><a href="{{ url_for('citizen.favourites') }}" class="{{ 'active' if ep == 'citizen.favourites' }}">Favourites</a></li>
+  </ul>
+
+  <div class="sidebar-section">My profile</div>
+  <ul class="sidebar-nav">
+    <li><a href="{{ url_for('citizen.profile') }}" class="{{ 'active' if ep == 'citizen.profile' }}">Personal details</a></li>
+    <li><a href="{{ url_for('citizen.records') }}" class="{{ 'active' if ep == 'citizen.records' }}">My records</a></li>
+    <li><a href="{{ url_for('citizen.documents') }}" class="{{ 'active' if ep == 'citizen.documents' }}">Document wallet</a></li>
+    <li><a href="{{ url_for('citizen.notifications') }}" class="{{ 'active' if ep == 'citizen.notifications' }}">Notifications
+      {% if current_user.unread_count %}<span class="pill-count">{{ current_user.unread_count }}</span>{% endif %}</a></li>
+    <li><a href="{{ url_for('auth.change_password') }}" class="{{ 'active' if ep == 'auth.change_password' }}">Password</a></li>
+    <li><a href="{{ url_for('citizen.settings') }}" class="{{ 'active' if ep == 'citizen.settings' }}">Settings</a></li>
+  </ul>
+
+{% elif current_user.is_employee %}
+  {% set dept = current_user.employee.department if current_user.employee else None %}
+  <div class="sidebar-section">{{ dept.name if dept else 'Workspace' }}</div>
+  <ul class="sidebar-nav">
+    <li><a href="{{ url_for('employee.dashboard') }}" class="{{ 'active' if ep == 'employee.dashboard' }}">Dashboard</a></li>
+    <li><a href="{{ url_for('employee.queue') }}" class="{{ 'active' if ep in ['employee.queue','employee.application_detail'] }}">Work queue</a></li>
+    <li><a href="{{ url_for('employee.queue_board') }}" class="{{ 'active' if ep == 'employee.queue_board' }}">Queue board</a></li>
+    <li><a href="{{ url_for('employee.search') }}" class="{{ 'active' if ep in ['employee.search','employee.citizen_profile'] }}">Find a citizen</a></li>
+    <li><a href="{{ url_for('employee.verify_identity') }}" class="{{ 'active' if ep == 'employee.verify_identity' }}">Verify an identity</a></li>
+  </ul>
+
+  {% if dept %}
+    <div class="sidebar-section">Departmental module</div>
+    <ul class="sidebar-nav">
+      {% if dept.code == 'HA' %}
+        <li><a href="{{ url_for('departments.home_affairs') }}" class="{{ 'active' if ep == 'departments.home_affairs' }}">Identity and civil register</a></li>
+        <li><a href="{{ url_for('departments.passport') }}" class="{{ 'active' if ep == 'departments.passport' }}">Passport services</a></li>
+      {% elif dept.code == 'PAS' %}
+        <li><a href="{{ url_for('departments.passport') }}" class="{{ 'active' if ep == 'departments.passport' }}">Passport register</a></li>
+      {% elif dept.code == 'POL' %}
+        <li><a href="{{ url_for('departments.police') }}" class="{{ 'active' if ep == 'departments.police' }}">Clearance certificates</a></li>
+      {% elif dept.code == 'TRF' %}
+        <li><a href="{{ url_for('departments.traffic') }}" class="{{ 'active' if ep == 'departments.traffic' }}">Licences and vehicles</a></li>
+      {% elif dept.code == 'FIN' %}
+        <li><a href="{{ url_for('departments.finance') }}" class="{{ 'active' if ep == 'departments.finance' }}">Revenue and accounts</a></li>
+      {% elif dept.code == 'PEN' %}
+        <li><a href="{{ url_for('departments.pensions') }}" class="{{ 'active' if ep == 'departments.pensions' }}">Grants and payroll</a></li>
+      {% endif %}
+    </ul>
+  {% endif %}
+
+  <div class="sidebar-section">Oversight</div>
+  <ul class="sidebar-nav">
+    <li><a href="{{ url_for('employee.access_requests') }}" class="{{ 'active' if ep == 'employee.access_requests' }}">Data sharing</a></li>
+    <li><a href="{{ url_for('employee.reports') }}" class="{{ 'active' if ep == 'employee.reports' }}">Reports</a></li>
+    <li><a href="{{ url_for('employee.activity') }}" class="{{ 'active' if ep == 'employee.activity' }}">My activity</a></li>
+    <li><a href="{{ url_for('auth.change_password') }}" class="{{ 'active' if ep == 'auth.change_password' }}">Password</a></li>
+    <li><a href="{{ url_for('employee.settings') }}" class="{{ 'active' if ep == 'employee.settings' }}">Settings</a></li>
+  </ul>
+
+{% elif current_user.is_admin %}
+  <div class="sidebar-section">Administration</div>
+  <ul class="sidebar-nav">
+    <li><a href="{{ url_for('admin.dashboard') }}" class="{{ 'active' if ep == 'admin.dashboard' }}">System overview</a></li>
+    <li><a href="{{ url_for('admin.users') }}" class="{{ 'active' if ep in ['admin.users','admin.new_user'] }}">Accounts and roles</a></li>
+    <li><a href="{{ url_for('admin.departments') }}" class="{{ 'active' if ep == 'admin.departments' }}">Departments</a></li>
+    <li><a href="{{ url_for('admin.services') }}" class="{{ 'active' if ep == 'admin.services' }}">Service catalogue</a></li>
+    <li><a href="{{ url_for('admin.permissions') }}" class="{{ 'active' if ep == 'admin.permissions' }}">Access matrix</a></li>
+    <li><a href="{{ url_for('admin.audit') }}" class="{{ 'active' if ep == 'admin.audit' }}">Audit log</a></li>
+    <li><a href="{{ url_for('admin.settings') }}" class="{{ 'active' if ep == 'admin.settings' }}">Settings</a></li>
+  </ul>
+
+  <div class="sidebar-section">Operations</div>
+  <ul class="sidebar-nav">
+    <li><a href="{{ url_for('employee.queue') }}" class="{{ 'active' if ep == 'employee.queue' }}">All applications</a></li>
+    <li><a href="{{ url_for('employee.search') }}" class="{{ 'active' if ep in ['employee.search','employee.citizen_profile'] }}">Citizen register</a></li>
+    <li><a href="{{ url_for('employee.reports') }}" class="{{ 'active' if ep == 'employee.reports' }}">Reports</a></li>
+  </ul>
+{% endif %}
+
+<div class="sidebar-section">Public site</div>
+<ul class="sidebar-nav">
+  <li><a href="{{ url_for('main.services') }}">Service catalogue</a></li>
+  <li><a href="{{ url_for('main.help_page') }}">Help</a></li>
+</ul>

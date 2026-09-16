@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty %}
+{% block title %}Find a citizen{% endblock %}
+{% block crumb %}<strong>Find a citizen</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div>
+  <h1>Find a citizen</h1>
+  <p class="lead">Search by national ID, name or phone number. Every search is written
+     to the audit log with your name and department.</p>
+</div></div>
+
+<form method="get" class="panel mb-3">
+  <div class="panel-body">
+    <div class="flex">
+      <input type="search" name="q" value="{{ term }}" autofocus
+             placeholder="National ID, surname or mobile number">
+      <button class="btn btn-primary" type="submit">Search</button>
+    </div>
+  </div>
+</form>
+
+{% if term %}
+  <div class="panel">
+    <div class="panel-head"><h2>{{ results|length }} result{{ '' if results|length == 1 else 's' }} for “{{ term }}”</h2></div>
+    {% if results %}
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Name</th><th>National ID</th><th>District</th><th>Identity</th>
+          <th>Open cases</th><th></th></tr></thead>
+        <tbody>
+          {% for c in results %}
+            <tr>
+              <td><strong>{{ c.full_name }}</strong>
+                <div class="small muted">{{ c.phone or 'No number on file' }}</div></td>
+              <td class="mono-ref">{{ c.national_id }}</td>
+              <td class="small">{{ c.district or '—' }}</td>
+              <td>{% if c.verified %}<span class="badge badge-approved">Verified</span>
+                  {% else %}<span class="badge badge-pending">Unverified</span>{% endif %}</td>
+              <td class="small">{{ c.applications|rejectattr('is_closed')|list|length }}</td>
+              <td class="text-right">
+                <a class="btn btn-outline btn-sm" href="{{ url_for('employee.citizen_profile', citizen_id=c.id) }}">Open</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    {% else %}
+      <div class="panel-body">
+        {{ empty("No citizen matches that",
+                 "Check the spelling of the surname, or search the full national ID instead of part of it.") }}
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

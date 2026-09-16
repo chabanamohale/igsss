@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import stat, empty %}
+{% block title %}Clearance certificates{% endblock %}
+{% block crumb %}<strong>Clearance certificates</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div class="striped" style="--stripe:var(--dept-POL)">
+  <h1>Police clearance certificates</h1>
+  <p class="lead">Personal details come from the verified citizen profile, so the file
+     starts with fingerprints and the background check rather than data capture.</p>
+</div></div>
+
+<div class="grid grid-3 mb-3">
+  {{ stat("Files on record", records|length) }}
+  {{ stat("Awaiting a decision", pending|length, "background check in progress", attention=pending|length > 0) }}
+  {{ stat("Flagged", flagged|length, "adverse findings") }}
+</div>
+
+<div class="grid grid-sidebar">
+  <div class="panel">
+    <div class="panel-head"><h2>Clearance files</h2>
+      <span class="head-actions">
+        <input type="search" placeholder="Filter" data-filter-table="#pcc-table" style="width:180px"></span>
+    </div>
+    {% if records %}
+      <div class="table-wrap">
+      <table id="pcc-table" class="records">
+        <thead><tr><th>Case</th><th>Applicant</th><th>Fingerprints</th>
+          <th>Status</th><th>Decide</th></tr></thead>
+        <tbody>
+          {% for r in records %}
+            <tr style="--stripe: var(--dept-POL)">
+              <td class="mono-ref">{{ r.case_number }}
+                <div class="small muted">{{ r.station or '' }}</div></td>
+              <td>{{ r.citizen.full_name if r.citizen else '—' }}
+                <div class="small muted">{{ r.citizen.national_id if r.citizen }}</div></td>
+              <td>{% if r.fingerprints_taken %}<span class="badge badge-approved">Taken</span>
+                  {% else %}<span class="badge badge-pending">Outstanding</span>{% endif %}</td>
+              <td>{% if r.clearance_status == 'Clear' %}<span class="badge badge-approved">Clear</span>
+                  {% elif r.clearance_status == 'Flagged' %}<span class="badge badge-rejected">Flagged</span>
+                  {% else %}<span class="badge badge-pending">Pending</span>{% endif %}
+                {% if r.expiry_date %}<div class="small muted">to {{ r.expiry_date.strftime('%d %b %Y') }}</div>{% endif %}</td>
+              <td class="text-right">
+                {% if r.clearance_status == 'Pending' %}
+                  <form method="post" action="{{ url_for('departments.decide_clearance', rec_id=r.id) }}" class="flex" style="justify-content:flex-end">
+                    <select name="outcome" style="width:auto"><option>Clear</option><option>Flagged</option></select>
+                    <button class="btn btn-primary btn-sm" type="submit">Record</button>
+                  </form>
+                {% else %}<span class="small muted">Decided</span>{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    {% else %}
+      <div class="panel-body">{{ empty("No clearance files", "Open one using the form beside this list.") }}</div>
+    {% endif %}
+  </div>
+
+  <form method="post" action="{{ url_for('departments.create_clearance') }}" class="panel" style="height:fit-content">
+    <div class="panel-head"><h3>Open a clearance file</h3></div>
+    <div class="panel-body">
+      <div class="field">
+        <label for="citizen_id">Citizen ID in this system</label>
+        <input type="number" id="citizen_id" name="citizen_id" required>
+      </div>
+      <div class="field">
+        <label for="record_type">Purpose</label>
+        <select id="record_type" name="record_type">
+          <option>Clearance</option><option>Employment</option>
+          <option>Emigration</option><option>Adoption</option><option>Firearm licence</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="station">Station</label>
+        <input type="text" id="station" name="station" value="Police Headquarters, Maseru">
+      </div>
+      <label class="check">
+        <input type="checkbox" name="fingerprints" value="1">
+        <span>Full set of fingerprints taken and attested</span>
+      </label>
+      <div class="field">
+        <label for="remarks">Remarks</label>
+        <textarea id="remarks" name="remarks" placeholder="Period of residence, purpose of travel, anything the checking officer should know."></textarea>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Open file</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

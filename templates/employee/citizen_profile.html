@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status_badge %}
+{% block title %}{{ citizen.full_name }}{% endblock %}
+{% block crumb %}<a href="{{ url_for('employee.search') }}">Find a citizen</a> ·
+  <strong>{{ citizen.full_name }}</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ citizen.full_name }}</h1>
+    <p class="lead"><span class="mono-ref">{{ citizen.national_id }}</span>
+      {%- if citizen.district %} · {{ citizen.district }}{% endif %}
+      {%- if citizen.age is not none %} · {{ citizen.age }} years old{% endif %}</p>
+  </div>
+  <div class="head-actions">
+    {% if citizen.verified %}
+      <span class="badge badge-approved">Verified {{ citizen.verified_on.strftime('%d %b %Y') if citizen.verified_on }}</span>
+    {% else %}
+      <span class="badge badge-pending">Unverified</span>
+      {% if dept and dept.code == 'HA' or current_user.is_admin %}
+        <form method="post" action="{{ url_for('employee.verify_citizen', citizen_id=citizen.id) }}">
+          <button class="btn btn-straw" type="submit">Verify identity</button>
+        </form>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="alert alert-info">
+  You are seeing this profile as <strong>{{ dept.name if dept else 'System administration' }}</strong>.
+  Record areas your department is not cleared for are hidden, and this view has been
+  written to the audit log.
+</div>
+
+<div class="grid grid-2">
+
+  {# ---- identity ---- #}
+  {% if 'identity' in areas %}
+    <div class="panel">
+      <div class="panel-head"><span class="dept-tag" style="--stripe:var(--dept-HA)">Identity and contact</span></div>
+      <div class="panel-body">
+        <dl class="deflist">
+          <dt>Full name</dt><dd>{{ citizen.full_name }}</dd>
+          <dt>National ID</dt><dd class="mono-ref">{{ citizen.national_id }}</dd>
+          <dt>Date of birth</dt><dd>{{ citizen.date_of_birth.strftime('%d %B %Y') if citizen.date_of_birth else '—' }}</dd>
+          <dt>Sex</dt><dd>{{ citizen.gender or '—' }}</dd>
+          <dt>Phone</dt><dd>{{ citizen.phone or '—' }}</dd>
+          <dt>Email</dt><dd>{{ citizen.email or '—' }}</dd>
+          <dt>Address</dt><dd>{{ citizen.address or '—' }}</dd>
+          <dt>District</dt><dd>{{ citizen.district or '—' }}</dd>
+        </dl>
+      </div>
+    </div>
+  {% endif %}
+
+  {# ---- civil ---- #}
+  {% if 'civil' in areas %}
+    <div class="panel">
+      <div class="panel-head"><span class="dept-tag" style="--stripe:var(--dept-HA)">Civil registration</span></div>
+      <div class="panel-body">
+        {% if citizen.civil_records %}
+          <table><tbody>
+            {% for r in citizen.civil_records %}
+              <tr><td><strong>{{ r.record_type }}</strong>
+                <div class="small muted">{{ r.reference }} · {{ r.place or '—' }}</div></td>
+                <td class="text-right small">{{ r.event_date.strftime('%d %b %Y') if r.event_date else '—' }}</td></tr>
+            {% endfor %}
+          </tbody></table>
+        {% else %}<p class="small muted mb-0">No civil records.</p>{% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  {# ---- passport ---- #}
+  {% if 'passport' in areas %}
+    <div class="panel">
+      <div class="panel-head"><span class="dept-tag" style="--stripe:var(--dept-PAS)">Passport records</span></div>
+      <div class="panel-body">
+        {% if citizen.passports %}
+          <table><tbody>
+            {% for p in citizen.passports %}
+              <tr><td><strong class="mono-ref">{{ p.passport_no }}</strong>
+                <div class="small muted">{{ p.passport_type }} · {{ p.issuing_office or '—' }}</div></td>
+                <td class="text-right">
+                  {% if p.is_valid %}<span class="badge badge-approved">Valid</span>
+                  {% else %}<span class="badge badge-rejected">Expired</span>{% endif %}
+                  <div class="small muted">{{ p.expiry_date.strftime('%d %b %Y') if p.expiry_date }}</div></td></tr>
+            {% endfor %}
+          </tbody></table>
+        {% else %}<p class="small muted mb-0">No passport issued.</p>{% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  {# ---- licence ---- #}
+  {% if 'traffic_licence' in areas %}
+    <div class="panel">
+      <div class="panel-head"><span class="dept-tag" style="--stripe:var(--dept-TRF)">Driver licence</span></div>
+      <div class="panel-body">
+        {% if citizen.licences %}
+          <table><tbody>
+            {% for l in citizen.licences %}
+              <tr><td><strong class="mono-ref">{{ l.licence_no }}</strong>
+                <div class="small muted">Class {{ l.licence_class }}{% if l.restrictions %} · {{ l.restrictions }}{% endif %}</div></td>
+                <td class="text-right">
+                  {% if l.is_valid %}<span class="badge badge-approved">Valid</span>
+                  {% else %}<span class="badge badge-rejected">{{ l.status }}</span>{% endif %}
+                  <div class="small muted">{{ l.expiry_date.strftime('%d %b %Y') if l.expiry_date }}</div></td></tr>
+            {% endfor %}
+          </tbody></table>
+        {% else %}<p class="small muted mb-0">No driver licence.</p>{% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  {# ---- vehicles ---- #}
+  {% if 'vehicle' in areas %}
+    <div class="panel">
+      <div class="panel-head"><span class="dept-tag" style="--stripe:var(--dept-TRF)">Vehicles</span></div>
+      <div class="panel-body">
+        {% if citizen.vehicles %}
+          <table><tbody>
+            {% for v in citizen.vehicles %}
+              <tr><td><strong class="mono-ref">{{ v.registration_no }}</strong>
+                <div class="small muted">{{ v.year or '' }} {{ v.make }} {{ v.model }} · {{ v.colour }}</div></td>
+                <td class="text-right">
+                  {% if v.licence_valid %}<span class="badge badge-approved">Licensed</span>
+                  {% else %}<span class="badge badge-rejected">Unlicensed</span>{% endif %}
+                  <div class="small muted">{{ v.licence_expiry.strftime('%d %b %Y') if v.licence_expiry }}</div></td></tr>
+            {% endfor %}
+          </tbody></table>
+        {% else %}<p class="small muted mb-0">No vehicles registered.</p>{% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  {# ---- police ---- #}
+  {% if 'police' in areas %}
+    <div class="panel">
+      <div class="panel-head"><span class="dept-tag" style="--stripe:var(--dept-POL)">Police clearance</span></div>
+      <div class="panel-body">
+        {% if citizen.police_records %}
+          <table><tbody>
+            {% for r in citizen.police_records %}
+              <tr><td><strong class="mono-ref">{{ r.case_number }}</strong>
+                <div class="small muted">{{ r.record_type }} · {{ r.station or '' }}</div>
+                {% if r.remarks %}<div class="small">{{ r.remarks }}</div>{% endif %}</td>
+                <td class="text-right">
+                  {% if r.clearance_status == 'Clear' %}<span class="badge badge-approved">Clear</span>
+                  {% elif r.clearance_status == 'Flagged' %}<span class="badge badge-rejected">Flagged</span>
+                  {% else %}<span class="badge badge-pending">Pending</span>{% endif %}</td></tr>
+            {% endfor %}
+          </tbody></table>
+        {% else %}<p class="small muted mb-0">No police records.</p>{% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  {# ---- finance ---- #}
+  {% if 'finance' in areas %}
+    <div class="panel">
+      <div class="panel-head"><span class="dept-tag" style="--stripe:var(--dept-FIN)">Tax account</span></div>
+      <div class="panel-body">
+        {% if citizen.finance_record %}
+          <dl class="deflist">
+            <dt>Tax number</dt><dd class="mono-ref">{{ citizen.finance_record.tax_number }}</dd>
+            <dt>Status</dt><dd>{{ citizen.finance_record.tax_status }}</dd>
+            <dt>Owing</dt><dd>{{ citizen.finance_record.outstanding_balance|money }}</dd>
+            <dt>Last filed</dt><dd>{{ citizen.finance_record.last_filed.strftime('%d %b %Y') if citizen.finance_record.last_filed else '—' }}</dd>
+          </dl>
+        {% else %}<p class="small muted mb-0">No taxpayer account.</p>{% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  {# ---- pension ---- #}
+  {% if 'pension' in areas %}
+    <div class="panel">
+      <div class="panel-head"><span class="dept-tag" style="--stripe:var(--dept-PEN)">Grants and pensions</span></div>
+      <div class="panel-body">
+        {% if citizen.pension_records %}
+          <table><tbody>
+            {% for r in citizen.pension_records %}
+              <tr><td><strong>{{ r.grant_type }}</strong>
+                <div class="small muted">{{ r.pension_no }} · {{ r.pay_point }}</div></td>
+                <td class="text-right">{{ r.monthly_amount|money }}
+                  <div class="small muted">{{ r.status }}</div></td></tr>
+            {% endfor %}
+          </tbody></table>
+        {% elif citizen.pension_eligible %}
+          <p class="small mb-0">Aged {{ citizen.age }} — meets the Old Age Pension
+             age condition but is not enrolled.</p>
+        {% else %}<p class="small muted mb-0">Not enrolled for any grant.</p>{% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  {# ---- payments ---- #}
+  {% if 'payments' in areas %}
+    <div class="panel">
+      <div class="panel-head"><span class="dept-tag" style="--stripe:var(--dept-FIN)">Payment history</span></div>
+      <div class="panel-body">
+        {% if citizen.payments %}
+          <table><tbody>
+            {% for p in citizen.payments[:8] %}
+              <tr><td><span class="mono-ref">{{ p.reference }}</span>
+                <div class="small muted">{{ p.description }}</div></td>
+                <td class="text-right">{{ p.amount|money }}
+                  <div class="small muted">{{ p.status }}</div></td></tr>
+            {% endfor %}
+          </tbody></table>
+        {% else %}<p class="small muted mb-0">No payments recorded.</p>{% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  {# ---- documents ---- #}
+  {% if 'documents' in areas %}
+    <div class="panel">
+      <div class="panel-head"><span class="dept-tag" style="--stripe:var(--dept-HA)">Document wallet</span></div>
+      <div class="panel-body">
+        {% if citizen.documents %}
+          <table><tbody>
+            {% for d in citizen.documents %}
+              <tr><td><a href="{{ url_for('citizen.open_document', doc_id=d.id) }}" target="_blank">{{ d.original_name }}</a>
+                <div class="small muted">{{ d.doc_type }}</div></td>
+                <td class="text-right">
+                  {% if d.verified %}<span class="badge badge-approved">Verified</span>
+                  {% else %}
+                    <form method="post" action="{{ url_for('employee.verify_document', doc_id=d.id) }}">
+                      <button class="btn btn-outline btn-sm" type="submit">Verify</button></form>
+                  {% endif %}</td></tr>
+            {% endfor %}
+          </tbody></table>
+        {% else %}<p class="small muted mb-0">No documents on file.</p>{% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  {# ---- applications ---- #}
+  {% if 'applications' in areas %}
+    <div class="panel" style="grid-column: 1 / -1">
+      <div class="panel-head"><h3>Applications across all departments</h3></div>
+      {% if citizen.applications %}
+        <div class="table-wrap">
+        <table class="records">
+          <thead><tr><th>Reference</th><th>Service</th><th>Department</th>
+            <th>Submitted</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {% for a in citizen.applications %}
+              <tr style="--stripe: {{ a.department.colour }}">
+                <td class="mono-ref">{{ a.reference }}</td>
+                <td class="small">{{ a.service.name }}</td>
+                <td class="small">{{ a.department.name }}</td>
+                <td class="small">{{ a.submitted_at.strftime('%d %b %Y') }}</td>
+                <td>{{ status_badge(a.status, a.is_overdue) }}</td>
+                <td class="text-right">
+                  <a class="btn btn-outline btn-sm" href="{{ url_for('employee.application_detail', app_id=a.id) }}">Open</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        </div>
+      {% else %}
+        <div class="panel-body"><p class="small muted mb-0">No applications on record.</p></div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {# ---- what is hidden ---- #}
+  {% set hidden = AREA_LABELS.keys()|reject('in', areas)|list %}
+  {% if hidden %}
+    <div class="locked" style="grid-column: 1 / -1">
+      <strong>Hidden from {{ dept.name if dept else 'this role' }}:</strong>
+      {{ hidden|map('replace', '_', ' ')|join(', ') }}.
+      Raise a <a href="{{ url_for('employee.access_requests') }}">data-sharing request</a>
+      if you need one of these for a case you are working on.
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import stat, empty %}
+{% block title %}Identity and civil register{% endblock %}
+{% block crumb %}<strong>Identity and civil register</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div class="striped" style="--stripe:var(--dept-HA)">
+  <h1>Identity and civil register</h1>
+  <p class="lead">Home Affairs anchors the single citizen profile. Every other
+     department relies on the verification you record here.</p>
+</div></div>
+
+<div class="grid grid-4 mb-3">
+  {{ stat("Registered citizens", stats.citizens) }}
+  {{ stat("Verified", stats.verified, "trusted by all departments") }}
+  {{ stat("Awaiting verification", stats.pending, "blocking applications", attention=stats.pending > 0) }}
+  {{ stat("Civil records", stats.civil, "births, marriages, deaths") }}
+</div>
+
+<div class="grid grid-sidebar">
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Waiting for verification</h2>
+      <span class="head-actions">
+        <input type="search" placeholder="Filter this list"
+               data-filter-table="#pending-table" style="width:200px">
+      </span>
+    </div>
+    {% if unverified %}
+      <div class="table-wrap">
+      <table id="pending-table">
+        <thead><tr><th>Name</th><th>National ID</th><th>District</th>
+          <th>Registered</th><th></th></tr></thead>
+        <tbody>
+          {% for c in unverified %}
+            <tr>
+              <td><strong>{{ c.full_name }}</strong>
+                <div class="small muted">{{ c.phone or 'No number' }}</div></td>
+              <td class="mono-ref">{{ c.national_id }}</td>
+              <td class="small">{{ c.district or '—' }}</td>
+              <td class="small">{{ c.created_at.strftime('%d %b %Y') }}</td>
+              <td class="text-right nowrap">
+                <a class="btn btn-outline btn-sm" href="{{ url_for('employee.citizen_profile', citizen_id=c.id) }}">Review</a>
+                <form method="post" action="{{ url_for('employee.verify_citizen', citizen_id=c.id) }}"
+                      style="display:inline"
+                      data-confirm="Verify {{ c.full_name }}? Every department will rely on this.">
+                  <button class="btn btn-straw btn-sm" type="submit">Verify</button></form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    {% else %}
+      <div class="panel-body">{{ empty("Everyone is verified", "No profiles are waiting on a Home Affairs check.") }}</div>
+    {% endif %}
+  </div>
+
+  <form method="post" action="{{ url_for('departments.register_civil') }}" class="panel" style="height:fit-content">
+    <div class="panel-head"><h3>Register a civil record</h3></div>
+    <div class="panel-body">
+      <div class="field">
+        <label for="citizen_id">Citizen ID in this system</label>
+        <input type="number" id="citizen_id" name="citizen_id" required>
+      </div>
+      <div class="field">
+        <label for="record_type">Record type</label>
+        <select id="record_type" name="record_type">
+          <option>Birth</option><option>Marriage</option><option>Death</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="event_date">Date of the event</label>
+        <input type="date" id="event_date" name="event_date">
+      </div>
+      <div class="field">
+        <label for="place">Place</label>
+        <input type="text" id="place" name="place" placeholder="Queen Mamohato Hospital, Maseru">
+      </div>
+      <div class="field">
+        <label for="details">Details</label>
+        <textarea id="details" name="details" placeholder="Informant, witnesses, remarks"></textarea>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Register record</button>
+    </div>
+  </form>
+</div>
+
+<div class="panel mt-3">
+  <div class="panel-head"><h2>Recently registered</h2></div>
+  {% if recent %}
+    <table>
+      <thead><tr><th>Reference</th><th>Type</th><th>Citizen</th><th>Event date</th><th>Place</th></tr></thead>
+      <tbody>
+        {% for r in recent %}
+          <tr>
+            <td class="mono-ref">{{ r.reference }}</td>
+            <td><span class="badge badge-neutral">{{ r.record_type }}</span></td>
+            <td class="small">{{ r.citizen.full_name if r.citizen else '—' }}</td>
+            <td class="small">{{ r.event_date.strftime('%d %b %Y') if r.event_date else '—' }}</td>
+            <td class="small">{{ r.place or '—' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="panel-body"><p class="small muted mb-0">No civil records registered yet.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

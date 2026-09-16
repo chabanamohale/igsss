@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Leave a review{% endblock %}
+{% block crumb %}<a href="{{ url_for('citizen.application_detail', app_id=application.id) }}">{{ application.reference }}</a> · <strong>Review</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div>
+  <h1>How was {{ application.service.name }}?</h1>
+  <p class="lead">Your rating helps other citizens know what to expect, and helps
+     {{ application.department.name }} see how their service is doing.</p>
+</div></div>
+
+<form method="post" class="panel" style="max-width:520px" data-validate>
+  <div class="panel-body">
+    <div class="field">
+      <label>Your rating</label><br>
+      <div class="star-row" data-star-input="#rating-value" style="font-size:1.8rem">
+        {% for i in range(5) %}<button type="button" aria-label="{{ i + 1 }} stars">★</button>{% endfor %}
+      </div>
+      <input type="hidden" id="rating-value" name="rating" required
+             value="{{ existing.rating if existing else '' }}">
+    </div>
+    <div class="field">
+      <label for="comment">Comments (optional)</label>
+      <textarea id="comment" name="comment" rows="4"
+        placeholder="What went well, or what could be faster?">{{ existing.comment if existing }}</textarea>
+    </div>
+    <button class="btn btn-primary btn-block" type="submit">
+      {{ 'Update review' if existing else 'Submit review' }}</button>
+  </div>
+</form>
+{% endblock %}

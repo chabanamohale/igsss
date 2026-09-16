@@ -1,0 +1,107 @@
+{% extends "public.html" %}
+{% block title %}Create your profile{% endblock %}
+{% block body %}
+<section class="section">
+  <div class="section-inner" style="max-width:720px">
+    <h1>Create your citizen profile</h1>
+    <p class="muted">Enter your details exactly as they appear on your national ID.
+       Home Affairs checks them against the civil register before you can apply
+       for services.</p>
+
+    <form method="post" class="panel">
+      <div class="panel-body">
+
+        <h3>Your identity</h3>
+        <div class="field-row">
+          <div class="field">
+            <label for="first_name">First name</label>
+            <input type="text" id="first_name" name="first_name"
+                   value="{{ form.first_name or '' }}" required>
+          </div>
+          <div class="field">
+            <label for="last_name">Surname</label>
+            <input type="text" id="last_name" name="last_name"
+                   value="{{ form.last_name or '' }}" required>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="national_id">National ID number</label>
+            <input type="text" id="national_id" name="national_id" inputmode="numeric"
+                   value="{{ form.national_id or '' }}" required>
+            <div class="hint">Digits only, as printed on the card.</div>
+          </div>
+          <div class="field">
+            <label for="date_of_birth">Date of birth</label>
+            <input type="date" id="date_of_birth" name="date_of_birth"
+                   value="{{ form.date_of_birth or '' }}">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="gender">Sex</label>
+            <select id="gender" name="gender">
+              <option value="">Prefer not to say</option>
+              <option value="Female" {{ 'selected' if form.gender == 'Female' }}>Female</option>
+              <option value="Male" {{ 'selected' if form.gender == 'Male' }}>Male</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="district">District</label>
+            <select id="district" name="district">
+              <option value="">Choose a district</option>
+              {% for d in districts %}
+                <option value="{{ d }}" {{ 'selected' if form.district == d }}>{{ d }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <h3 class="mt-3">How to reach you</h3>
+        <div class="field-row">
+          <div class="field">
+            <label for="email">Email address</label>
+            <input type="email" id="email" name="email" value="{{ form.email or '' }}" required>
+          </div>
+          <div class="field">
+            <label for="phone">Mobile number</label>
+            <input type="tel" id="phone" name="phone" value="{{ form.phone or '' }}"
+                   placeholder="+266 5800 0000">
+          </div>
+        </div>
+        <div class="field">
+          <label for="address">Physical address</label>
+          <input type="text" id="address" name="address" value="{{ form.address or '' }}"
+                 placeholder="Village or street, town">
+        </div>
+
+        <h3 class="mt-3">Sign-in details</h3>
+        <div class="field">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" value="{{ form.username or '' }}"
+                 required autocomplete="username">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required
+                   minlength="8" autocomplete="new-password">
+            <div class="hint">At least 8 characters.</div>
+          </div>
+          <div class="field">
+            <label for="confirm">Confirm password</label>
+            <input type="password" id="confirm" name="confirm" required
+                   autocomplete="new-password">
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit">Create my profile</button>
+        <p class="small muted mt-2 mb-0">Already registered?
+           <a href="{{ url_for('auth.login') }}">Sign in instead</a>.</p>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

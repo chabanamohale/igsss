@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import empty %}
+{% block title %}Audit log{% endblock %}
+{% block crumb %}<strong>Audit log</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div><h1>Audit log</h1>
+    <p class="lead">Every sign-in, search, record view and decision, with the officer's
+       name and department attached. Showing the {{ logs|length }} most recent matches.</p></div>
+  <div class="head-actions no-print">
+    <button class="btn btn-outline" onclick="window.print()">Print</button>
+  </div>
+</div>
+
+<form method="get" class="filter-bar">
+  <input type="search" name="q" value="{{ term }}" placeholder="Officer, record reference or detail">
+  <select name="action">
+    <option value="">Any action</option>
+    {% for a in actions %}<option value="{{ a }}" {{ 'selected' if action == a }}>{{ a }}</option>{% endfor %}
+  </select>
+  <button class="btn btn-primary" type="submit">Filter</button>
+  <a class="btn btn-outline" href="{{ url_for('admin.audit') }}">Clear</a>
+</form>
+
+<div class="grid grid-sidebar">
+  <div class="panel">
+    {% if logs %}
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>When</th><th>Who</th><th>Department</th><th>Action</th>
+          <th>Record</th><th>Detail</th><th>IP</th></tr></thead>
+        <tbody>
+          {% for l in logs %}
+            <tr>
+              <td class="small nowrap">{{ l.timestamp.strftime('%d %b %Y %H:%M:%S') }}</td>
+              <td class="small">{{ l.actor }}</td>
+              <td class="small muted">{{ l.department or '—' }}</td>
+              <td><span class="badge {% if l.action in ['LOGIN_FAILED','PAYMENT_REVERSAL','TOGGLE_USER'] %}badge-rejected
+                {% elif l.action.startswith('VIEW') or l.action == 'SEARCH' %}badge-review
+                {% else %}badge-neutral{% endif %}">{{ l.action }}</span></td>
+              <td class="small mono-ref">{{ l.entity_ref or '—' }}</td>
+              <td class="small">{{ l.description or '' }}</td>
+              <td class="small muted">{{ l.ip_address or '—' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    {% else %}
+      <div class="panel-body">{{ empty("No log entries match", "Clear the filters to see the whole trail.") }}</div>
+    {% endif %}
+  </div>
+
+  <div class="panel" style="height:fit-content">
+    <div class="panel-head"><h3>Busiest accounts</h3></div>
+    <div class="panel-body">
+      <table>
+        <tbody>
+          {% for actor, count in busiest %}
+            <tr><td class="small">{{ actor }}</td>
+              <td class="text-right"><strong>{{ count }}</strong></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="small muted mt-2 mb-0">High counts are normal for counter staff. Look for
+         volume that does not match the person's caseload.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

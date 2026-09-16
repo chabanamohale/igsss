@@ -1,0 +1,149 @@
+{% extends "public.html" %}
+{% from "partials/macros.html" import stat %}
+{% block title %}Government services in one place{% endblock %}
+
+{% block body %}
+
+<div class="section-inner">
+<section class="hero-lg" data-reveal="scale">
+  <div class="hero-lg-inner">
+    <div>
+      <span class="hero-eyebrow"><span class="pulse-dot"></span> One profile, six departments</span>
+      <h1>Prove who you are once.<br>Use it everywhere.</h1>
+      <p class="lead">Home Affairs verifies your national ID a single time. Traffic,
+         Police, Finance, Pensions and Passport Services then read the same profile —
+         so you stop carrying the same certified copies from counter to counter.</p>
+      <div class="hero-cta">
+        <a class="btn btn-straw" href="{{ url_for('auth.register') }}">Create your profile</a>
+        <a class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.4)"
+           href="{{ url_for('main.services') }}">Browse {{ stats.services }} services</a>
+      </div>
+
+      <div class="counter-row">
+        <div class="counter-item"><span class="counter-value" data-counter="{{ stats.departments }}">0</span>
+          <div class="counter-label">Departments connected</div></div>
+        <div class="counter-item"><span class="counter-value" data-counter="{{ stats.services }}">0</span>
+          <div class="counter-label">Services available</div></div>
+        <div class="counter-item"><span class="counter-value" data-counter="{{ stats.citizens }}">0</span>
+          <div class="counter-label">Registered profiles</div></div>
+        <div class="counter-item"><span class="counter-value" data-counter="{{ stats.processed }}">0</span>
+          <div class="counter-label">Applications completed</div></div>
+      </div>
+    </div>
+
+    <div class="profile-card tilt-card" aria-label="Example of a verified citizen profile">
+      <div class="pc-head">
+        <span class="avatar" style="background:var(--green-800)">TM</span>
+        <div>
+          <div class="pc-id">Thabo Mokoena</div>
+          <div class="small muted">National ID 4208119112 · Maseru</div>
+        </div>
+        <span class="badge badge-approved" style="margin-left:auto">Verified</span>
+      </div>
+      <div class="pc-fan">
+        <div style="--stripe:var(--dept-HA)">Identity and civil records</div>
+        <div style="--stripe:var(--dept-PAS)">Passport LS0491882</div>
+        <div style="--stripe:var(--dept-TRF)">Licence class B · A 4471</div>
+        <div style="--stripe:var(--dept-POL)">Clearance issued</div>
+        <div style="--stripe:var(--dept-FIN)">Tax account compliant</div>
+        <div style="--stripe:var(--dept-PEN)">Grant eligibility checked</div>
+      </div>
+      <p class="pc-note">Each department reads only the rows it is cleared for, and
+         every read is written to the audit log.</p>
+    </div>
+  </div>
+</section>
+</div>
+
+<section class="section section-alt">
+  <div class="section-inner">
+    <div class="row-between flex-wrap mb-2" data-reveal>
+      <h2 class="mb-0">Departments on the system</h2>
+      <p class="muted mb-0">Each one owns its own records and decides what it shares.</p>
+    </div>
+    <div class="carousel" data-carousel>
+      <button class="carousel-nav prev" aria-label="Previous">‹</button>
+      <div class="carousel-track">
+        {% for d in departments %}
+          <div class="dept-card tilt-card" style="--stripe: {{ d.colour }}; width:280px" data-reveal="scale">
+            <h3>{{ d.name }}</h3>
+            <p class="small">{{ d.description|truncate(120) }}</p>
+            <p class="small mt-1">
+              <a href="{{ url_for('main.services', department=d.code) }}">
+                {{ d.services|length }} service{{ '' if d.services|length == 1 else 's' }}</a>
+            </p>
+          </div>
+        {% endfor %}
+      </div>
+      <button class="carousel-nav next" aria-label="Next">›</button>
+      <div class="carousel-dots"></div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-inner">
+    <div class="row-between flex-wrap mb-2" data-reveal>
+      <h2 class="mb-0">Commonly requested</h2>
+      <a href="{{ url_for('main.services') }}">See every service</a>
+    </div>
+    <div class="grid grid-3">
+      {% for s in featured %}
+        <a class="service-card tilt-card zoom-frame" style="--stripe: {{ s.department.colour }};color:inherit"
+           href="{{ url_for('main.service_detail', code=s.code) }}" data-reveal="scale">
+          <h3>{{ s.name }}</h3>
+          <p class="small muted">{{ s.description|truncate(90) }}</p>
+          <div class="svc-meta">
+            <span>{{ s.fee|money }}</span>
+            <span>{{ s.processing_days }} working days</span>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt">
+  <div class="section-inner">
+    <h2 data-reveal>How an application moves</h2>
+    <div class="grid grid-4 mt-2">
+      <div class="striped tilt-card" style="--stripe:var(--green-700)" data-reveal="left">
+        <h4>1 · You apply</h4>
+        <p class="small muted">Pick a service. Your details fill in from your
+           verified profile, and documents already on file are reused.</p>
+      </div>
+      <div class="striped tilt-card" style="--stripe:var(--green-700)" data-reveal>
+        <h4>2 · You pay</h4>
+        <p class="small muted">Settle the fee by mobile money or bank transfer and
+           get a receipt with a reference number.</p>
+      </div>
+      <div class="striped tilt-card" style="--stripe:var(--green-700)" data-reveal>
+        <h4>3 · The department works it</h4>
+        <p class="small muted">An officer claims the case, checks what their
+           department is cleared to see, and records a decision.</p>
+      </div>
+      <div class="striped tilt-card" style="--stripe:var(--green-700)" data-reveal="right">
+        <h4>4 · You collect</h4>
+        <p class="small muted">Status changes reach you as a notification, so you
+           travel to the office once — to collect.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-inner">
+    <h2 data-reveal>Explore the departments</h2>
+    <p class="muted" data-reveal>A quick visual tour of what each department owns.</p>
+    <div class="gallery-grid" data-reveal="scale">
+      {% for d in departments %}
+        <a class="gallery-tile" href="{{ url_for('main.services', department=d.code) }}"
+           style="background-image: linear-gradient(160deg, {{ d.colour }}, rgba(0,0,0,.55)); color:#fff; text-decoration:none">
+          <span>{{ d.name }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends "public.html" %}
+{% block title %}Help{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+{% endblock %}
+
+{% block body %}
+<section class="section">
+  <div class="section-inner" style="max-width:860px">
+    <h1 data-reveal>Help</h1>
+    <p class="lead" data-reveal>A two-minute walkthrough, a map of district offices, and
+       answers to what people ask most.</p>
+
+    <div class="grid grid-2 mb-3" data-reveal="scale">
+      <div class="media-frame">
+        <video controls preload="metadata" poster=""
+               style="background:#00302B" aria-label="How the system works">
+          <source src="{{ url_for('static', filename='media/how-it-works.mp4') }}" type="video/mp4">
+        </video>
+        <div class="media-caption">Watch: how one profile reaches six departments.
+          <span class="muted">(placeholder recording — swap in a real screen capture)</span></div>
+      </div>
+      <div class="media-frame" style="background:var(--surface)">
+        <div style="padding:1.6rem 1.2rem 0">
+          <h3 style="color:var(--ink)">Listen: office-hours announcement</h3>
+          <p class="small muted">For citizens who prefer audio, or are using a screen reader.</p>
+        </div>
+        <audio class="styled" controls preload="none" style="padding:0 1.2rem 1.2rem;width:100%">
+          <source src="{{ url_for('static', filename='media/announcement.mp3') }}" type="audio/mpeg">
+        </audio>
+      </div>
+    </div>
+
+    <h2 class="mt-3" data-reveal>Find your district office</h2>
+    <p class="muted" data-reveal>Every district has a Home Affairs counter that can start
+       most applications on your behalf if you cannot get online.</p>
+    <div id="office-map" class="map-frame" data-reveal="scale"></div>
+
+    <h2 class="mt-3" data-reveal>Frequently asked questions</h2>
+    <input type="search" id="faq-search" placeholder="Search a question…"
+           style="max-width:320px;margin-bottom:1rem" data-reveal>
+
+    <div class="stack" id="faq-list" data-reveal>
+      {% set faqs = [
+        ("My profile says “awaiting verification”",
+         "Home Affairs checks your national ID against the civil register before you can "
+         "apply for anything. It usually takes one working day. You will get a "
+         "notification the moment it clears."),
+        ("Do I have to upload the same certificate again?",
+         "No. Once an officer marks a document verified, it sits in your document wallet "
+         "and every connected department can read it. That is the point of the system."),
+        ("Who can see my records?",
+         "Each department is cleared for specific parts of your profile and nothing more. "
+         "Traffic sees your licence and vehicles; it does not see your tax account. "
+         "Finance sees payments; it does not see your police clearance. Every time an "
+         "officer opens your record, the system writes their name, department and the "
+         "time to the audit log."),
+        ("I paid but my application has not moved",
+         "Payments post immediately and push the case to “Under review”. If yours has "
+         "not, open the application and check the payment status, then quote the "
+         "receipt reference to the department."),
+        ("I have no smartphone",
+         "The system runs in any browser, including on the shared computers at district "
+         "offices. An officer at the counter can also submit on your behalf and print "
+         "your receipt."),
+        ("Can I change how the system contacts me?",
+         "Yes — sign in and open Settings to turn email or SMS updates on or off, and to "
+         "switch between light and dark mode."),
+      ] %}
+      {% for q, a in faqs %}
+        <details class="panel faq-item">
+          <summary class="panel-body" style="cursor:pointer;font-weight:600">{{ q }}</summary>
+          <div class="panel-body" style="padding-top:0">{{ a }}</div>
+        </details>
+      {% endfor %}
+    </div>
+    <p class="small muted mt-2" id="faq-empty" style="display:none">No question matches that search.</p>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function () {
+  var offices = [
+    ["Maseru",      -29.3151, 27.4869],
+    ["Berea",       -29.1167, 27.7333],
+    ["Leribe",      -28.8867, 28.0500],
+    ["Butha-Buthe", -28.7667, 28.2500],
+    ["Mokhotlong",  -29.2833, 29.0667],
+    ["Thaba-Tseka", -29.5167, 28.6167],
+    ["Qacha's Nek", -30.1167, 28.6833],
+    ["Quthing",     -30.4000, 27.7167],
+    ["Mohale's Hoek", -30.1500, 27.4667],
+    ["Mafeteng",    -29.8167, 27.2500]
+  ];
+  var mapEl = document.getElementById("office-map");
+  if (mapEl && window.L) {
+    var map = L.map(mapEl).setView([-29.6, 28.2], 8);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; OpenStreetMap contributors', maxZoom: 17
+    }).addTo(map);
+    offices.forEach(function (o) {
+      L.marker([o[1], o[2]]).addTo(map)
+        .bindPopup("<strong>" + o[0] + " District Office</strong><br>Home Affairs counter");
+    });
+  }
+
+  var search = document.getElementById("faq-search");
+  var items = document.querySelectorAll(".faq-item");
+  var empty = document.getElementById("faq-empty");
+  if (search) {
+    search.addEventListener("input", function () {
+      var term = search.value.toLowerCase();
+      var visible = 0;
+      items.forEach(function (item) {
+        var match = item.textContent.toLowerCase().indexOf(term) > -1;
+        item.style.display = match ? "" : "none";
+        if (match) visible++;
+      });
+      empty.style.display = visible ? "none" : "block";
+    });
+  }
+})();
+</script>
+{% endblock %}

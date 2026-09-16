@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status_badge, empty %}
+{% block title %}Work queue{% endblock %}
+{% block crumb %}<strong>Work queue</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div>
+  <h1>Work queue</h1>
+  <p class="lead">{{ applications|length }} application{{ '' if applications|length == 1 else 's' }}
+     match these filters.</p>
+</div></div>
+
+<form method="get" class="filter-bar">
+  <input type="search" name="q" value="{{ term }}"
+         placeholder="Reference, name or national ID">
+  <select name="status">
+    <option value="">Any status</option>
+    {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if status == s }}>{{ s }}</option>{% endfor %}
+  </select>
+  <select name="scope">
+    <option value="all" {{ 'selected' if scope == 'all' }}>Everyone's work</option>
+    <option value="mine" {{ 'selected' if scope == 'mine' }}>Assigned to me</option>
+    <option value="unassigned" {{ 'selected' if scope == 'unassigned' }}>Unclaimed</option>
+  </select>
+  <button class="btn btn-primary" type="submit">Filter</button>
+  <a class="btn btn-outline" href="{{ url_for('employee.queue') }}">Clear</a>
+</form>
+
+<div class="panel">
+  {% if applications %}
+    <div class="table-wrap">
+    <table class="records" id="queue-table">
+      <thead><tr><th>Reference</th><th>Applicant</th><th>Service</th><th>Submitted</th>
+        <th>Due</th><th>Status</th><th>Officer</th><th></th></tr></thead>
+      <tbody>
+        {% for a in applications %}
+          <tr style="--stripe: {{ a.department.colour }}">
+            <td class="mono-ref">{{ a.reference }}
+              {% if a.priority == 'Urgent' %}<div class="small" style="color:var(--stop)">Urgent</div>{% endif %}</td>
+            <td>{{ a.citizen.full_name }}<div class="small muted">{{ a.citizen.national_id }}</div></td>
+            <td class="small">{{ a.service.name }}</td>
+            <td class="small nowrap">{{ a.submitted_at.strftime('%d %b') }}</td>
+            <td class="small nowrap">{{ a.due_date.strftime('%d %b') if a.due_date else '—' }}</td>
+            <td>{{ status_badge(a.status, a.is_overdue) }}</td>
+            <td class="small">{{ a.officer.full_name if a.officer else '—' }}</td>
+            <td class="text-right nowrap">
+              {% if not a.officer %}
+                <form method="post" action="{{ url_for('employee.claim', app_id=a.id) }}" style="display:inline">
+                  <button class="btn btn-straw btn-sm" type="submit">Claim</button>
+                </form>
+              {% endif %}
+              <a class="btn btn-outline btn-sm" href="{{ url_for('employee.application_detail', app_id=a.id) }}">Open</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <div class="panel-body">
+      {{ empty("Nothing matches those filters", "Widen the search, or clear the filters to see the whole queue.") }}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

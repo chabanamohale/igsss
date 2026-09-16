@@ -1,0 +1,71 @@
+{% extends "public.html" %}
+{% from "partials/macros.html" import star_display, fav_button %}
+{% block title %}{{ service.name }}{% endblock %}
+{% block body %}
+<section class="section">
+  <div class="section-inner" style="max-width:860px">
+    <p class="small"><a href="{{ url_for('main.services') }}">Services</a> ·
+       {{ service.department.name }}</p>
+
+    <div class="striped mb-3" style="--stripe: {{ service.department.colour }};position:relative">
+      <div class="row-between">
+        <h1 class="mb-1">{{ service.name }}</h1>
+        {% if current_user.is_authenticated and current_user.is_citizen %}
+          {{ fav_button(service, service.id in current_user.citizen.favourite_service_ids) }}
+        {% endif %}
+      </div>
+      <p class="lead muted">{{ service.description }}</p>
+      <div>{{ star_display(service.average_rating, service.review_count) }}</div>
+    </div>
+
+    <div class="grid grid-3 mb-3">
+      <div class="stat"><div class="stat-label">Fee</div>
+        <div class="stat-value">{{ service.fee|money }}</div></div>
+      <div class="stat"><div class="stat-label">Processing time</div>
+        <div class="stat-value">{{ service.processing_days }}</div>
+        <div class="stat-foot">working days</div></div>
+      <div class="stat"><div class="stat-label">Handled by</div>
+        <div class="stat-value" style="font-size:1rem;padding-top:.5rem">{{ service.department.name }}</div></div>
+    </div>
+
+    <div class="panel mb-3">
+      <div class="panel-head"><h2>What to bring</h2></div>
+      <div class="panel-body">
+        {% if service.document_list %}
+          <ul style="margin:0;padding-left:1.1rem">
+            {% for doc in service.document_list %}<li>{{ doc }}</li>{% endfor %}
+          </ul>
+          <p class="small muted mt-2">Anything already verified on your profile is
+             reused automatically — you will not be asked for it twice.</p>
+        {% else %}
+          <p class="mb-0 muted">No supporting documents are required.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if current_user.is_authenticated and current_user.is_citizen %}
+      <a class="btn btn-primary" href="{{ url_for('citizen.apply', code=service.code) }}">Apply for this service</a>
+    {% else %}
+      <div class="flex flex-wrap">
+        <a class="btn btn-primary" href="{{ url_for('auth.register') }}">Create a profile to apply</a>
+        <a class="btn btn-outline" href="{{ url_for('auth.login') }}">I already have one</a>
+      </div>
+    {% endif %}
+
+    {% if service.reviews %}
+      <div class="panel mt-3">
+        <div class="panel-head"><h2>What applicants say</h2></div>
+        <div class="panel-body">
+          {% for r in service.reviews[-6:]|reverse %}
+            <div class="review-item">
+              {{ star_display(r.rating) }}
+              {% if r.comment %}<p class="small mb-0 mt-1">{{ r.comment }}</p>{% endif %}
+              <p class="small muted mb-0">{{ r.citizen.first_name }} {{ r.citizen.last_name[0] }}. · {{ r.created_at.strftime('%d %b %Y') }}</p>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

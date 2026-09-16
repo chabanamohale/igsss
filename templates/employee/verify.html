@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Verify an identity{% endblock %}
+{% block crumb %}<strong>Verify an identity</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div>
+  <h1>Verify an identity</h1>
+  <p class="lead">Counter check. Type the national ID on the card in front of you and
+     confirm the photograph and details match the person.</p>
+</div></div>
+
+<div class="grid grid-sidebar">
+  <div class="stack">
+    <form method="post" class="panel">
+      <div class="panel-body">
+        <div class="field">
+          <label for="national_id">National ID number</label>
+          <input type="text" id="national_id" name="national_id" inputmode="numeric"
+                 value="{{ national_id }}" autofocus required>
+        </div>
+        <button class="btn btn-primary" type="submit">Check the register</button>
+      </div>
+    </form>
+
+    {% if searched and citizen %}
+      <div class="panel" style="border-color: var(--clear)">
+        <div class="panel-head">
+          <h2>Match found</h2>
+          <span class="head-actions">
+            {% if citizen.verified %}<span class="badge badge-approved">Verified identity</span>
+            {% else %}<span class="badge badge-pending">Not yet verified</span>{% endif %}
+          </span>
+        </div>
+        <div class="panel-body">
+          <dl class="deflist">
+            <dt>Name</dt><dd>{{ citizen.full_name }}</dd>
+            <dt>National ID</dt><dd class="mono-ref">{{ citizen.national_id }}</dd>
+            <dt>Date of birth</dt><dd>{{ citizen.date_of_birth.strftime('%d %B %Y') if citizen.date_of_birth else '—' }}</dd>
+            <dt>Age</dt><dd>{{ citizen.age if citizen.age is not none else '—' }}</dd>
+            <dt>Sex</dt><dd>{{ citizen.gender or '—' }}</dd>
+            <dt>District</dt><dd>{{ citizen.district or '—' }}</dd>
+            <dt>Registered</dt><dd>{{ citizen.created_at.strftime('%d %b %Y') }}</dd>
+          </dl>
+          <div class="flex mt-3">
+            <a class="btn btn-primary" href="{{ url_for('employee.citizen_profile', citizen_id=citizen.id) }}">Open full profile</a>
+            {% if not citizen.verified %}
+              <form method="post" action="{{ url_for('employee.verify_citizen', citizen_id=citizen.id) }}">
+                <button class="btn btn-straw" type="submit">Verify this identity</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% elif searched %}
+      <div class="alert alert-danger">
+        <strong>No match for {{ national_id }}.</strong> The number is not in the
+        citizen register. Check the digits, then refer the person to Home Affairs to
+        register.
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="panel" style="height:fit-content">
+    <div class="panel-head"><h3>Before you verify</h3></div>
+    <div class="panel-body">
+      <ul class="small" style="padding-left:1.1rem;margin:0">
+        <li>The photograph on the card matches the person at the counter.</li>
+        <li>The name and date of birth match what the register returns.</li>
+        <li>The card is not visibly altered or expired.</li>
+        <li>Only Home Affairs can mark an identity verified — other departments rely
+            on that decision.</li>
+      </ul>
+      <p class="small muted mt-2 mb-0">Your name is recorded against every
+         verification you perform.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

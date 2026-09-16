@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Receipt {{ payment.reference }}{% endblock %}
+{% block crumb %}<a href="{{ url_for('citizen.payments') }}">Payments</a> ·
+  <strong>{{ payment.reference }}</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="no-print flex mb-3">
+  <button class="btn btn-primary" onclick="window.print()">Print this receipt</button>
+  <a class="btn btn-outline" href="{{ url_for('citizen.payments') }}">Back to payments</a>
+</div>
+
+<div class="receipt">
+  <div class="receipt-head">
+    <div style="font-family:var(--slab);font-size:1.2rem;font-weight:600">{{ ORGANISATION }}</div>
+    <div class="small muted">{{ SYSTEM_NAME }}</div>
+    <h2 style="margin:.75rem 0 0">Official receipt</h2>
+  </div>
+
+  <dl class="deflist">
+    <dt>Receipt number</dt><dd class="mono-ref">{{ payment.reference }}</dd>
+    <dt>Date paid</dt><dd>{{ payment.paid_at.strftime('%d %B %Y at %H:%M') if payment.paid_at else '—' }}</dd>
+    <dt>Paid by</dt><dd>{{ me.full_name }}</dd>
+    <dt>National ID</dt><dd>{{ me.national_id }}</dd>
+    <dt>Method</dt><dd>{{ payment.method }}</dd>
+    {% if payment.application %}
+      <dt>Application</dt><dd class="mono-ref">{{ payment.application.reference }}</dd>
+      <dt>Service</dt><dd>{{ payment.application.service.name }}</dd>
+      <dt>Department</dt><dd>{{ payment.application.department.name }}</dd>
+    {% endif %}
+  </dl>
+
+  <div class="receipt-total">
+    <span>Total paid</span><span>{{ payment.amount|money }}</span>
+  </div>
+
+  <p class="small muted mt-3 mb-0">Keep this receipt. Quote the reference above in any
+     query about this payment. Generated {{ now.strftime('%d %B %Y') }}.</p>
+</div>
+{% endblock %}

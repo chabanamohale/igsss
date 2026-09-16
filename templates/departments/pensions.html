@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import stat, empty %}
+{% block title %}Grants and payroll{% endblock %}
+{% block crumb %}<strong>Grants and payroll</strong>{% endblock %}
+{% block sidebar %}{% include "partials/nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="page-head"><div class="striped" style="--stripe:var(--dept-PEN)">
+  <h1>Grants and payroll</h1>
+  <p class="lead">Age and citizenship are read straight off the Home Affairs profile, so
+     eligibility is checked without the elderly travelling to prove it.</p>
+</div></div>
+
+<div class="grid grid-3 mb-3">
+  {{ stat("Beneficiaries", records|length) }}
+  {{ stat("Monthly payroll", payroll|money, "active grants only") }}
+  {{ stat("Eligible, not enrolled", candidates|length, "aged 70 or over", attention=candidates|length > 0) }}
+</div>
+
+<div class="grid grid-sidebar">
+  <div class="stack">
+    {% if candidates %}
+      <div class="panel" style="border-color: var(--straw)">
+        <div class="panel-head"><h2>Eligible but not yet enrolled</h2></div>
+        <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>National ID</th><th>Age</th><th>District</th><th>Identity</th></tr></thead>
+          <tbody>
+            {% for c in candidates %}
+              <tr>
+                <td><strong>{{ c.full_name }}</strong></td>
+                <td class="mono-ref">{{ c.national_id }}</td>
+                <td><strong>{{ c.age }}</strong></td>
+                <td class="small">{{ c.district or '—' }}</td>
+                <td>{% if c.verified %}<span class="badge badge-approved">Verified</span>
+                    {% else %}<span class="badge badge-pending">Unverified</span>{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        </div>
+        <div class="panel-body" style="border-top:1px solid var(--rule-soft)">
+          <p class="small muted mb-0">The system found these by comparing dates of birth
+             in the civil register against the age condition. Contact them rather than
+             waiting for them to apply.</p>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="panel">
+      <div class="panel-head"><h2>Beneficiary register</h2>
+        <span class="head-actions">
+          <input type="search" placeholder="Filter" data-filter-table="#pen-table" style="width:180px"></span>
+      </div>
+      {% if records %}
+        <div class="table-wrap">
+        <table id="pen-table" class="records">
+          <thead><tr><th>Pension number</th><th>Beneficiary</th><th>Grant</th>
+            <th>Monthly</th><th>Pay point</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {% for r in records %}
+              <tr style="--stripe: var(--dept-PEN)">
+                <td class="mono-ref">{{ r.pension_no }}</td>
+                <td>{{ r.citizen.full_name if r.citizen else '—' }}
+                  <div class="small muted">{{ r.citizen.age if r.citizen and r.citizen.age }} years</div></td>
+                <td class="small">{{ r.grant_type }}</td>
+                <td><strong>{{ r.monthly_amount|money }}</strong></td>
+                <td class="small">{{ r.pay_point }}</td>
+                <td>{% if r.status == 'Active' %}<span class="badge badge-approved">Active</span>
+                    {% else %}<span class="badge badge-rejected">{{ r.status }}</span>{% endif %}</td>
+                <td class="text-right">
+                  <form method="post" action="{{ url_for('departments.suspend_pension', rec_id=r.id) }}">
+                    <button class="btn btn-outline btn-sm" type="submit">
+                      {{ 'Suspend' if r.status == 'Active' else 'Reinstate' }}</button></form></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        </div>
+      {% else %}
+        <div class="panel-body">{{ empty("No beneficiaries enrolled", "Use the form beside this list to enrol someone.") }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <form method="post" action="{{ url_for('departments.enrol_pension') }}" class="panel" style="height:fit-content">
+    <div class="panel-head"><h3>Enrol a beneficiary</h3></div>
+    <div class="panel-body">
+      <div class="field">
+        <label for="citizen_id">Citizen ID in this system</label>
+        <input type="number" id="citizen_id" name="citizen_id" required>
+        <div class="hint">Age and verification are checked before enrolment is accepted.</div>
+      </div>
+      <div class="field">
+        <label for="grant_type">Grant</label>
+        <select id="grant_type" name="grant_type">
+          <option>Old Age Pension</option>
+          <option>Disability grant</option>
+          <option>Child grant</option>
+          <option>Public assistance</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="monthly_amount">Monthly amount (M)</label>
+        <input type="number" step="0.01" min="0" id="monthly_amount" name="monthly_amount" value="850">
+      </div>
+      <div class="field">
+        <label for="pay_point">Pay point</label>
+        <input type="text" id="pay_point" name="pay_point" value="Maseru Post Office">
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Enrol</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

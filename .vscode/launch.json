@@ -1,0 +1,28 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "IGSS: run the server",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/run.py",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "env": { "FLASK_CONFIG": "development" }
+    },
+    {
+      "name": "IGSS: rebuild and seed the database",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/seed.py",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "IGSS: run the smoke test",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/smoke_test.py",
+      "console": "integratedTerminal"
+    }
+  ]
+}
