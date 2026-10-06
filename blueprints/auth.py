@@ -120,10 +120,10 @@ def register():
                 "An account already uses that email address."
             )
 
-        # National ID: exactly 16 positive digits
-        if not re.fullmatch(r"[0-9]{16}", national_id):
+        # National ID: exactly 12 positive digits
+        if not re.fullmatch(r"[0-9]{12}", national_id):
             errors.append(
-                "National ID must contain exactly 16 digits."
+                "National ID must contain exactly 12 digits."
             )
         elif int(national_id) <= 0:
             errors.append(
