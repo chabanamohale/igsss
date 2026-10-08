@@ -12,17 +12,8 @@ main_bp = Blueprint("main", __name__)
 def home():
     if current_user.is_authenticated:
         return redirect(url_for("main.dashboard_router"))
-    departments = Department.query.order_by(Department.id).all()
-    featured = Service.query.filter_by(active=True).limit(6).all()
-    stats = {
-        "departments": Department.query.count(),
-        "services": Service.query.filter_by(active=True).count(),
-        "citizens": Citizen.query.count(),
-        "processed": Application.query.filter(
-            Application.status.in_(["Approved", "Collected"])).count(),
-    }
-    return render_template("main/home.html", departments=departments,
-                           featured=featured, stats=stats)
+
+    return redirect(url_for("auth.login"))
 
 
 @main_bp.route("/go")
